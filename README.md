@@ -12,28 +12,28 @@ Esto permite escalabilidad, independencia entre módulos y flexibilidad tecnoló
 
 ### 📁 Estructura de carpetas
 
-PerrosYGatos/
-├── backend/
-│ ├── pyg-auth/ # Autenticación y gestión de usuarios (Java)
-│ ├── pyg-user/ # Perfiles de usuarios y mascotas (Java)
-│ ├── pyg-professional/ # Profesionales y publicaciones (Java)
-│ ├── pyg-session/ # Gestión de sesiones entre usuarios y profesionales (Java)
-│ ├── pyg-notification/ # Notificaciones en tiempo real con WebSocket (NestJS)
-│ ├── pyg-content/ # Manejo de contenido y publicaciones (NestJS)
-│ ├── pyg-search/ # Búsqueda y filtrado de profesionales (NestJS)
-│ └── pyg-bff/ # Backend For Frontend (NestJS)
-│
-├── frontend/
-│ └── web/ # Aplicación principal en React + TypeScript
-│
-├── docs/ # Documentación técnica y diagramas
-│ ├── arquitectura.md
-│ ├── decisiones-tecnicas.md
-│ ├── entorno.md
-│ └── diagramas/
-│
-└── README.md #
 
+PerrosYGatos/
+├── 🧠 backend/
+│ ├── 💻 pyg-auth/ # Autenticación y gestión de usuarios (Java)
+│ ├── 💻 pyg-user/ # Perfiles de usuarios y mascotas (Java)
+│ ├── 💻 pyg-professional/ # Profesionales y publicaciones (Java)
+│ ├── 💻 pyg-session/ # Gestión de sesiones entre usuarios y profesionales (Java)
+│ ├── ⚡ pyg-notification/ # Notificaciones en tiempo real con WebSocket (NestJS)
+│ ├── ⚡ pyg-content/ # Manejo de contenido y publicaciones (NestJS)
+│ ├── ⚡ pyg-search/ # Búsqueda y filtrado de profesionales (NestJS)
+│ └── 🚪 pyg-bff/ # Backend For Frontend (NestJS)
+│
+├── 🌐 frontend/
+│ └── 🧩 web/ # Aplicación principal en React + TypeScript
+│
+├── 📚 docs/ # Documentación técnica y diagramas
+│ ├── 🏗️ arquitectura.md
+│ ├── 🧩 decisiones-tecnicas.md
+│ ├── ⚙️ entorno.md
+│ └── 🖼️ diagramas/
+│
+└── 📄 README.md
 
 ---
 
