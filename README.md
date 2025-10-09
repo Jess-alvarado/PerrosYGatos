@@ -10,6 +10,7 @@ El objetivo es facilitar la búsqueda, agendamiento y comunicación entre ambos,
 El sistema se construye bajo una **arquitectura de microservicios híbrida**, donde cada servicio cumple una responsabilidad específica y puede estar implementado en **Java (Spring Boot)** o **TypeScript (NestJS)**, según su propósito.
 Esto permite escalabilidad, independencia entre módulos y flexibilidad tecnológica.
 
+
 ### 📁 Estructura de carpetas
 
 
@@ -33,7 +34,7 @@ PerrosYGatos/
 │ ├── ⚙️ entorno.md
 │ └── 🖼️ diagramas/
 │
-└── 📄 README.md
+└── 📄 README.md #
 
 ---
 
