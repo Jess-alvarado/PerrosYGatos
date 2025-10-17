@@ -11,9 +11,8 @@ import java.util.List;
 
 @Configuration
 public class SwaggerConfig {
-
-    @Bean
-    public OpenAPI customOpenAPI() {
+        @Bean
+        public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
                         .title("🐾 PerrosYGatos - Auth Service API")
@@ -27,5 +26,5 @@ public class SwaggerConfig {
                 .servers(List.of(
                         new Server().url("http://localhost:8081").description("Entorno local")
                 ));
-    }
+        }
 }
