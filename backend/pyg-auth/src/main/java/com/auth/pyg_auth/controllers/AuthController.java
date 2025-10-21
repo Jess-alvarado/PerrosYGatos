@@ -2,21 +2,20 @@ package com.auth.pyg_auth.controllers;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.auth.pyg_auth.models.AuthResponse;
 
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import lombok.RequiredArgsConstructor;
 import com.auth.pyg_auth.models.LoginRequest;
-import com.auth.pyg_auth.services.AuthService;
 import com.auth.pyg_auth.models.UserRegisterRequest;
-import com.auth.pyg_auth.models.ProfessionalRegisterRequest;
+import com.auth.pyg_auth.services.AuthService;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 public class AuthController {
     private final AuthService authService;
 
@@ -25,13 +24,8 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(request));
     }
 
-    @PostMapping(value = "/register/owner")
-    public ResponseEntity<AuthResponse> registerOwner(@RequestBody UserRegisterRequest request) {
-        return ResponseEntity.ok(authService.ownerRegister(request));
-    }
-
-    @PostMapping(value = "/register/professional")
-    public ResponseEntity<AuthResponse> registerProfessional(@RequestBody ProfessionalRegisterRequest request) {
-        return ResponseEntity.ok(authService.professionalRegister(request));
+    @PostMapping(value = "/register")
+    public ResponseEntity<AuthResponse> register(@RequestBody UserRegisterRequest request) {
+        return ResponseEntity.ok(authService.register(request));
     }
 }
