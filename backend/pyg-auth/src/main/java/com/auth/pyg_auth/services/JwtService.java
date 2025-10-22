@@ -16,10 +16,10 @@ import java.util.Date;
 import java.util.function.Function;
 import io.jsonwebtoken.Claims;
 
+
 @Service
 public class JwtService {
     private static final String SECRET_KEY = "FFJG678UHFFTIKOLP50655368566B5970337OK9787654FT";
-
     // User Token Generation
     public String getToken(UserDetails user) {
         return getToken(new HashMap<>(), user);
