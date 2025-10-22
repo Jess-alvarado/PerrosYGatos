@@ -5,6 +5,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.auth.pyg_auth.services.JwtService;
+import com.auth.pyg_auth.services.TokenBlacklistService;
 
 import java.io.IOException;
 import jakarta.servlet.FilterChain;
@@ -25,6 +26,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -33,7 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String token = getTokenFromRequest(request);
         final String username;
 
-        if (token == null) {
+        if (token == null || tokenBlacklistService.isBlacklisted(token)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -51,6 +53,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }
+        filterChain.doFilter(request, response);
     }
 
     private String getTokenFromRequest(HttpServletRequest request) {

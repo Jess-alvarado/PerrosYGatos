@@ -26,6 +26,7 @@ public class AuthService {
         private final UserRepository userRepository;
         private final RoleRepository roleRepository;
         private final JwtService jwtService;
+        private final TokenBlacklistService tokenBlacklistService;
         private final PasswordEncoder passwordEncoder;
         private final AuthenticationManager authenticationManager;
 
@@ -58,5 +59,12 @@ public class AuthService {
                                 .token(jwtService.getToken(user))
                                 .build();
 
+        }
+
+        public void logout(String token) {
+                if (token == null || token.isBlank()) {
+                        return;
+                }
+                tokenBlacklistService.blacklist(token, jwtService.getExpirationDate(token));
         }
 }
