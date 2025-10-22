@@ -1,271 +1,196 @@
 # 🧠 pyg-auth — Authentication & Registration Microservice
 
-El servicio **`pyg-auth`** forma parte del ecosistema **PerrosYGatos**, una plataforma diseñada para conectar **dueños de mascotas** con **profesionales especializados en comportamiento animal** (etólogos, entrenadores, etc.).
+Este microservicio forma parte del proyecto **PerrosYGatos**, una plataforma que conecta **dueños de mascotas** con **profesionales especializados** (etólogos, entrenadores, cuidadores, etc.).
 
-Este microservicio gestiona el **registro, login y roles de usuarios**, diferenciando entre:
-- 👤 **Dueños de mascotas**
-- 🧑‍⚕️ **Profesionales del área animal**
+El servicio `pyg-auth` es responsable de la **autenticación, generación de tokens JWT y gestión de roles**, asegurando un acceso seguro al resto de microservicios.
 
 ---
 
-## ⚙️ Tecnologías utilizadas
+## ⚙️ Funcionalidad principal
 
-| Componente | Tecnología |
-|-------------|-------------|
-| Lenguaje | Java 17 |
-| Framework | Spring Boot 3.x |
-| Seguridad | Spring Security + JWT |
-| ORM | Spring Data JPA (Hibernate) |
-| Base de datos | PostgreSQL |
-| Librerías adicionales | Lombok, Validation API |
-| Build Tool | Maven |
-| Testing | JUnit 5, Mockito |
+`pyg-auth` maneja todo lo relacionado con la **identidad del usuario**:
 
----
+- Registro de usuarios (dueños o profesionales)
+- Inicio de sesión (login)
+- Generación y validación de tokens JWT
+- Gestión de roles (`ROLE_OWNER`, `ROLE_PROFESSIONAL`)
+- Documentación automática con **Swagger / OpenAPI**
+- En desarrollo: Logout y Refresh Token
 
-## 🧩 Descripción general
-
-El servicio **pyg-auth** se encarga de:
-
-- Registro y autenticación de **dueños y profesionales**.
-- Asignación automática de roles (`ROLE_OWNER`, `ROLE_PROFESSIONAL`).
-- Generación de tokens JWT seguros para acceso a otros microservicios.
-- Validación y protección de endpoints mediante filtros JWT.
-- Hash de contraseñas con **BCryptPasswordEncoder**.
+> 🔐 Este servicio centraliza la autenticación para los demás microservicios (`user`, `professional`, etc.), manteniendo una arquitectura limpia y desacoplada.
 
 ---
 
-## 🧱 Estructura del proyecto
+## 🧩 Arquitectura y estructura
+
 
 pyg-auth/
-├── src/main/java/com/auth/pyg_auth/
-│ ├── controller/
-│ │ └── AuthController.java # Controlador REST principal
-│ ├── service/
-│ │ └── AuthService.java # Lógica de negocio (registro/login)
-│ ├── model/
-│ │ ├── User.java # Entidad base para ambos tipos de usuario
-│ │ ├── PetProfile.java # Perfil de mascotas (solo para dueños)
-│ │ └── Role.java # Roles de usuario
-│ ├── repository/
-│ │ ├── UserRepository.java
-│ │ └── RoleRepository.java
-│ └── security/
-│ ├── JwtService.java # Generación y validación de tokens JWT
-│ ├── JwtAuthenticationFilter.java
-│ └── SecurityConfig.java
-│
-├── src/main/resources/
-│ ├── application.properties
-│ └── application-dev.properties
-│
+├── src/
+│   ├── main/java/com/auth/pyg_auth/
+│   │   ├── config/          # Configuración general (Security, OpenAPI, Beans)
+│   │   ├── controllers/     # Controladores REST (AuthController)
+│   │   ├── models/          # Entidades, DTOs y requests/responses
+│   │   ├── repositories/    # Interfaces JPA
+│   │   ├── security/        # Filtros JWT y autenticación
+│   │   └── services/        # Lógica de negocio (AuthService, JwtService)
+│   └── resources/
+│       └── application.properties
 └── pom.xml
 
 ---
 
-## 🔐 Roles y permisos
-
-| Rol | Descripción | Acceso |
-|------|--------------|--------|
-| `ROLE_OWNER` | Dueño de mascota que busca ayuda profesional. | CRUD de mascota, creación de solicitudes. |
-| `ROLE_PROFESSIONAL` | Profesional especializado (etólogo, entrenador). | Gestión de perfil profesional y sesiones. |
-| `ROLE_ADMIN` | (Opcional, futuro) administración general del sistema. | Todos los endpoints. |
+🧠 Tecnologías utilizadas
+Componente	Descripción
+☕ Java 17	Lenguaje base
+🌱 Spring Boot 3.5.6	Framework principal
+🔐 Spring Security + JWT	Autenticación y autorización
+🗄️ Spring Data JPA + PostgreSQL	Persistencia de datos
+🧩 Lombok	Reducción de código repetitivo
+📘 Swagger (Springdoc OpenAPI)	Documentación interactiva de endpoints
+🧰 Maven	Gestión de dependencias y build
+🔗 Endpoints principales
+Método	Endpoint	Descripción	Acceso
+POST	/auth/register	Registra un nuevo usuario general	Público
+POST	/auth/login	Autentica y devuelve token JWT	Público
+POST	/auth/logout	Invalida el token activo (en desarrollo)	Protegido
+POST	/auth/refresh	Renueva token JWT (pendiente)	Protegido
 
 ---
 
-## 📦 Endpoints principales
 
-Base URL:
-`http://localhost:8081/api/auth`
-
----
-
-### 🐾 **1. POST /register**
-
-Registra un nuevo usuario (dueño o profesional).
-El rol se asigna automáticamente según el campo `"role"` recibido en el cuerpo de la solicitud.
-
-#### 🧩 Body (Dueño de mascota)
-```json
+🧾 Ejemplos de uso
+🔹 Registro (/auth/register)
 {
-  "role": "OWNER",
-  "ownerName": "Juan",
-  "email": "correo@example.com",
-  "password": "123456",
-  "petProfile": {
-    "type": "DOG",            // o "CAT"
-    "breed": "Mestizo",
-    "petName": "Toby",
-    "age": 3,
-    "sterilized": true
-  }
-}
-🧩 Body (Profesional)
-
-{
-  "role": "PROFESSIONAL",
-  "name": "Juan Pérez",
-  "email": "correo@example.com",
-  "password": "trainer123",
-  "yearsExperience": 5,
-  "specialization": "Ethologist"
-}
-✅ Respuesta exitosa
-{
-  "message": "User registered successfully",
-  "userId": 21,
-  "role": "ROLE_PROFESSIONAL",
-  "token": "eyJhbGciOiJIUzI1NiIsInR..."
-}
-⚙️ Detalles técnicos
-
-La contraseña se encripta con BCryptPasswordEncoder antes de guardarse.
-
-Si el correo ya existe, retorna 409 Conflict.
-
-Se asigna automáticamente un rol mediante RoleRepository.
-
-Genera un token JWT inmediatamente tras el registro (inicio de sesión automático).
-
-🔑 2. POST /login
-
-Autentica un usuario existente.
-
-🧩 Body
-{
-  "email": "correo@example.com",
-  "password": "123456"
+  "username": "jess.alvarado",
+  "password": "StrongPass123!",
+  "firstname": "Jessica",
+  "lastname": "Alvarado",
+  "rolename": "ROLE_OWNER"
 }
 
-✅ Respuesta
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "expiresIn": 3600000,
-  "user": {
-    "id": 21,
-    "name": "Juan",
-    "role": "ROLE_OWNER"
-  }
-}
-⚙️ Detalles técnicos
 
-Valida credenciales con AuthenticationManager.
+📤 Respuesta:
 
-Si son válidas, genera un nuevo token JWT con el rol del usuario.
-
-Si no, retorna 401 Unauthorized.
-
-
-♻️ 3. POST /refresh
-
-Renueva un token JWT antes de que expire.
-
-🧩 Body
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 
+🔹 Login (/auth/login)
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "expiresIn": 3600000
+  "username": "jess.alvarado",
+  "password": "StrongPass123!"
 }
 
-🙋‍♀️ 4. GET /me
 
-Devuelve la información del usuario autenticado (extraída del JWT).
+📤 Respuesta:
 
-🔐 Header
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+
+---
+
+🔒 Seguridad
+
+El servicio utiliza Spring Security + JWT para proteger los endpoints.
+
+Solo las rutas /auth/**, /v3/api-docs/** y /swagger-ui/** están permitidas públicamente.
+
+Los endpoints protegidos requieren el header:
+
 Authorization: Bearer <token>
 
-✅ Respuesta
-{
-  "id": 21,
-  "name": "Juan",
-  "email": "correo@example.com",
-  "role": "ROLE_OWNER"
-}
+---
+
+Documentación disponible en:
+👉 http://localhost:8081/swagger-ui.html
+
+🧱 Entidades principales
+🧍 User
+
+Representa a cualquier usuario (dueño o profesional).
+
+Campo	Tipo	Descripción
+id	Long	Identificador único
+username	String	Nombre de usuario (único)
+password	String	Contraseña cifrada
+firstname	String	Nombre
+lastname	String	Apellido
+role	Role	Rol asignado
+createdAt	Date	Fecha de creación
+updatedAt	Date	Última actualización
+🛡️ Role
+Campo	Tipo	Descripción
+id	Long	Identificador del rol
+name	String	Nombre del rol (ROLE_OWNER o ROLE_PROFESSIONAL)
+
+---
+
+🔄 Estado actual
+Componente	Estado
+Registro/Login	✅ Implementado
+JWT + Seguridad	✅ Funcionando
+Swagger (OpenAPI)	✅ Activo
+Logout	🚧 En desarrollo
+Refresh Token	🚧 Pendiente
+Tests Unitarios	🔜 Próximamente
+
+---
 
 
-🧠 5. GET /roles (opcional)
+🚀 Cómo ejecutar el servicio localmente
+🔧 Requisitos previos
 
-Devuelve todos los roles disponibles.
+Tener instalado Java 17+
 
-✅ Respuesta
-[
-  "ROLE_OWNER",
-  "ROLE_PROFESSIONAL",
-  "ROLE_ADMIN"
-]
+Tener PostgreSQL corriendo localmente
 
-
-| Recurso                      | Implementación                                         |
-| ---------------------------- | ------------------------------------------------------ |
-| **Hash de contraseñas**      | `BCryptPasswordEncoder`                                |
-| **Tokens JWT**               | Generados con firma HMAC SHA-256                       |
-| **Expiración de tokens**     | 1 hora (configurable en `application.properties`)      |
-| **Autorización**             | Filtros de Spring Security (`JwtAuthenticationFilter`) |
-| **Roles y privilegios**      | Validados con anotaciones `@PreAuthorize` o `@Secured` |
-| **Validación de entrada**    | `@Valid` + `@NotBlank`, `@Email`, etc.                 |
-| **Manejo de errores global** | `@ControllerAdvice` con `ExceptionHandler`             |
-
-
-🧩 Variables importantes (application.properties)
-spring.application.name=pyg-auth
-server.port=8081
+Configurar la base de datos en application.properties:
 
 spring.datasource.url=jdbc:postgresql://localhost:5432/pyg_auth_db
-spring.datasource.username=${DB_USERNAME:postgres}
-spring.datasource.password=${DB_PASSWORD:root}
+spring.datasource.username=postgres
+spring.datasource.password=root
 spring.jpa.hibernate.ddl-auto=update
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.show-sql=true
 
-jwt.secret=${JWT_SECRET:default-secret}
-jwt.expiration=3600000
+▶️ Ejecución
 
-🧪 Pruebas
+Desde la raíz del proyecto:
 
-Ejecutar pruebas unitarias:
+cd backend/pyg-auth
+./mvnw spring-boot:run
 
-mvn test
 
-Pruebas a realizar:
+o en Windows:
 
-Registro correcto de usuarios (dueño y profesional).
+mvnw.cmd spring-boot:run
 
-Validación de duplicados (correo existente).
 
-Login con contraseña incorrecta.
+Luego abre en el navegador:
+👉 http://localhost:8081/swagger-ui.html
 
-Validación de roles (OWNER, PROFESSIONAL).
 
-Acceso a /me solo con token válido.
+---
 
-🚀 Ejecución local
-mvn spring-boot:run
 
-App disponible en: http://localhost:8081
+📬 Próximos pasos
 
-Swagger UI (si habilitado): http://localhost:8081/swagger-ui.html
+ Implementar /auth/logout
 
-🧭 Relación con otros microservicios
-Servicio	Interacción
-pyg-user	Recibe tokens JWT para validar identidad de usuarios.
-pyg-session	Usa ROLE_PROFESSIONAL y ROLE_OWNER para validar reservas.
-pyg-bff	Redirige peticiones autenticadas hacia este servicio.
+ Crear /auth/refresh
 
-🧱 Próximos pasos
+ Añadir validaciones en registro
 
- Implementar endpoint /logout (invalidar token manualmente).
+ Añadir tests unitarios
 
- Enviar correo de bienvenida tras el registro (eventos asíncronos).
+ Integrar con microservicios user y professional
 
- Añadir verificación de correo electrónico.
+---
 
- Separar flujos de registro en OwnerAuthController y ProfessionalAuthController.
 
 🐾 Autora
 
 Desarrollado por Jessica Alvarado
-Proyecto: PerrosYGatos 🐶🐱
+Proyecto: PerrosYGatos
 Fines educativos y de portafolio técnico.
+
+---
