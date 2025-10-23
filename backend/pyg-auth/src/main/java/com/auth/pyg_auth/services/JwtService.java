@@ -3,6 +3,7 @@ package com.auth.pyg_auth.services;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -18,12 +19,20 @@ import io.jsonwebtoken.Claims;
 
 @Service
 public class JwtService {
-    private static final String SECRET_KEY = "FFJG678UHFFTIKOLP50655368566B5970337OK9787654FT";
+
+    @Value("${secret.key}")
+    private String secretKey;
 
     // User Token Generation
     public String getToken(UserDetails user) {
         return getToken(new HashMap<>(), user);
     }
+
+    /*
+    public String generateRefreshToken(UserDetails user) {
+        return buildToken(new HashMap<>(), user, 1000 * 60 * 60 * 24 * 7); // 7 days
+    }
+    */
 
     // Overloaded method to include extra claims
     private String getToken(Map<String, Object> extraClaims, UserDetails user) {
@@ -38,7 +47,7 @@ public class JwtService {
 
     // Helper method to get signing key
     private Key getKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
@@ -80,5 +89,10 @@ public class JwtService {
     // Check if the token is expired
     private boolean isTokenExpired(String token) {
         return getExpiration(token).before(new Date());
+    }
+
+    public String extractUsername(String refreshToken) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'extractUsername'");
     }
 }

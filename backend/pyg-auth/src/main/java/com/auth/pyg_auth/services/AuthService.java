@@ -6,6 +6,8 @@ import com.auth.pyg_auth.models.AuthResponse;
 import com.auth.pyg_auth.models.LoginRequest;
 import com.auth.pyg_auth.models.UserRegisterRequest;
 import com.auth.pyg_auth.models.Role;
+import com.auth.pyg_auth.models.Token;
+// import com.auth.pyg_auth.models.TokenResponse;
 
 import lombok.RequiredArgsConstructor;
 import com.auth.pyg_auth.models.User;
@@ -29,6 +31,7 @@ public class AuthService {
         private final TokenBlacklistService tokenBlacklistService;
         private final PasswordEncoder passwordEncoder;
         private final AuthenticationManager authenticationManager;
+        private final Token token;
 
         public AuthResponse login(LoginRequest request) {
                 authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
@@ -67,4 +70,26 @@ public class AuthService {
                 }
                 tokenBlacklistService.blacklist(token, jwtService.getExpirationDate(token));
         }
+
+/*
+        public TokenResponse refreshToken(String authHeader) {
+                if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                        throw new RuntimeException("Authorization header missing or invalid");
+                }
+                String refreshToken = authHeader.substring(7);
+                if (tokenBlacklistService.isBlacklisted(refreshToken)) {
+                        throw new RuntimeException("Token is blacklisted");
+                }
+                String username = jwtService.extractUsername(refreshToken);
+                UserDetails user = userRepository.findByUsername(username)
+                                .orElseThrow(() -> new RuntimeException("User not found"));
+                if (!jwtService.isTokenValid(refreshToken, user)) {
+                        throw new RuntimeException("Invalid token");
+                }
+                String newToken = jwtService.getToken(user);
+                return TokenResponse.builder()
+                                .token(newToken)
+                                .build();
+        }
+*/
 }

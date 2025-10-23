@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.auth.pyg_auth.models.AuthResponse;
 import com.auth.pyg_auth.models.MessageResponse;
+import com.auth.pyg_auth.models.TokenResponse;
 
 import lombok.RequiredArgsConstructor;
 import com.auth.pyg_auth.models.LoginRequest;
@@ -31,6 +32,13 @@ public class AuthController {
     public ResponseEntity<AuthResponse> register(@RequestBody UserRegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));
     }
+
+    /*
+    @PostMapping("/refresh")
+    public TokenResponse refreshToken(@RequestHeader(HttpHeaders.AUTHORIZATION) final String authHeader) {
+        return authService.refreshToken(authHeader);
+    }
+    */
 
     @PostMapping(value = "/logout")
     public ResponseEntity<MessageResponse> logout(@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
