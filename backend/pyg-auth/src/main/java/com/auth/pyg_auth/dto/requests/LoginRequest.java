@@ -1,4 +1,4 @@
-package com.auth.pyg_auth.models;
+package com.auth.pyg_auth.dto.requests;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,12 +7,9 @@ import lombok.NoArgsConstructor;
 
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
-public class UserRegisterRequest {
+@NoArgsConstructor
+public class LoginRequest {
     String username;
     String password;
-    String firstname;
-    String lastname;
-    String rolename;
 }

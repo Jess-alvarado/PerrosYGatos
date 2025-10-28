@@ -1,4 +1,4 @@
-package com.auth.pyg_auth.models;
+package com.auth.pyg_auth.dto.responses;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class LoginRequest {
-    String username;
-    String password;
+public class AuthResponse {
+    String token;
 }

@@ -6,11 +6,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.auth.pyg_auth.models.AuthResponse;
-
 import lombok.RequiredArgsConstructor;
-import com.auth.pyg_auth.models.LoginRequest;
-import com.auth.pyg_auth.models.UserRegisterRequest;
+
+import com.auth.pyg_auth.dto.requests.LoginRequest;
+import com.auth.pyg_auth.dto.requests.UserRegisterRequest;
+import com.auth.pyg_auth.dto.responses.AuthResponse;
 import com.auth.pyg_auth.services.AuthService;
 
 import io.swagger.v3.oas.annotations.Operation;

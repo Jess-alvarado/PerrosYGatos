@@ -2,9 +2,9 @@ package com.auth.pyg_auth.services;
 
 import org.springframework.stereotype.Service;
 
-import com.auth.pyg_auth.models.AuthResponse;
-import com.auth.pyg_auth.models.LoginRequest;
-import com.auth.pyg_auth.models.UserRegisterRequest;
+import com.auth.pyg_auth.dto.requests.LoginRequest;
+import com.auth.pyg_auth.dto.requests.UserRegisterRequest;
+import com.auth.pyg_auth.dto.responses.AuthResponse;
 import com.auth.pyg_auth.models.Role;
 
 import lombok.RequiredArgsConstructor;
