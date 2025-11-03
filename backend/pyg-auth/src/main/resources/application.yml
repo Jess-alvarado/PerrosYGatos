@@ -1,0 +1,55 @@
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  application:
+    name: ${SPRING_APPLICATION_NAME:pyg-auth}
+  mvc:
+    hiddenmethod:
+      filter:
+        enabled: true
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
+      indent-output: true
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/pyg_auth}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: ${DB_DRIVER:org.postgresql.Driver}
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_HIBERNATE_DDL_AUTO:update}
+    show-sql: ${JPA_SHOW_SQL:true}
+    properties:
+      hibernate:
+        '[format_sql]': ${JPA_FORMAT_SQL:true}
+        dialect: ${DB_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
+    database-platform: ${DB_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
+    open-in-view: ${JPA_OPEN_IN_VIEW:false}
+
+server:
+  port: ${SERVER_PORT:8081}
+  error:
+    include-message: always
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:86400000} # 24 horas en milisegundos
+
+logging:
+  level:
+    root: ${LOG_LEVEL:INFO}
+    '[com.auth.pyg_auth]': ${APP_LOG_LEVEL:DEBUG}
+    '[org.springframework.web]': ${SPRING_LOG_LEVEL:INFO}
+    '[org.hibernate.SQL]': DEBUG
+    '[org.hibernate.type.descriptor.sql.BasicBinder]': TRACE
+
+# Swagger configuration
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs

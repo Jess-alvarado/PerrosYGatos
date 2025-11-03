@@ -1,0 +1,63 @@
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-root}
+      POSTGRES_DB: ${POSTGRES_DB:-perrosygatos}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  pyg-auth:
+    build:
+      context: ./backend/pyg-auth
+    container_name: pyg-auth
+    environment:
+      - SPRING_DATASOURCE_URL=${AUTH_DATABASE_URL:-jdbc:postgresql://postgres:5432/pyg_auth}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - jwt.secret=${JWT_SECRET}
+      - jwt.expiration=${JWT_EXPIRATION}
+      - SERVER_PORT=8081
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+
+  pyg-owner:
+    build:
+      context: ./backend/pyg-owner
+    container_name: pyg-owner
+    environment:
+      - SPRING_DATASOURCE_URL=${OWNER_DATABASE_URL:-jdbc:postgresql://postgres:5432/pyg_owner}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://pyg-auth:8081}
+      - SERVER_PORT=8082
+    ports:
+      - "8082:8082"
+    depends_on:
+      - postgres
+      - pyg-auth
+
+  pyg-professional:
+    build:
+      context: ./backend/pyg-professional
+    container_name: pyg-professional
+    environment:
+      - SPRING_DATASOURCE_URL=${PROFESSIONAL_DATABASE_URL:-jdbc:postgresql://postgres:5432/pyg_professional}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://pyg-auth:8081}
+      - SERVER_PORT=8083
+    ports:
+      - "8083:8083"
+    depends_on:
+      - postgres
+      - pyg-auth
+
+volumes:
+  pgdata:
