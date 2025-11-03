@@ -20,7 +20,7 @@ import java.util.List;
 @Builder
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "users") // "user" es palabra reservada en SQL
+@Table(name = "users")
 public class User implements UserDetails {
 
     @Id
