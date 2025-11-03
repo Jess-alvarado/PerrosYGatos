@@ -1,6 +1,7 @@
 # PerrosYGatos
+![GitHub repo views](https://komarev.com/ghpvc/?username=Jess-alvarado&repo=PerrosYGatos&color=brightgreen&style=flat)
 
-**PerrosYGatos** es una plataforma web diseñada para conectar **dueños de mascotas** con **profesionales especializados** (entrenadores, veterinarios, cuidadores o asesores de comportamiento).
+**PerrosYGatos** es una plataforma web diseñada para conectar **dueños de mascotas** con **profesionales especializados** (entrenadores, etólogos, cuidadores o asesores de comportamiento).
 El objetivo es facilitar la búsqueda, agendamiento y comunicación entre ambos, además de permitir que los profesionales compartan contenido educativo que refleje su experiencia y calidad de servicio.
 
 ---
@@ -13,28 +14,26 @@ Esto permite escalabilidad, independencia entre módulos y flexibilidad tecnoló
 
 ### 📁 Estructura de carpetas
 
-
+```
 PerrosYGatos/
-├── 🧠 backend/
-│ ├── 💻 pyg-auth/ # Autenticación y gestión de usuarios (Java)
-│ ├── 💻 pyg-user/ # Perfiles de usuarios y mascotas (Java)
-│ ├── 💻 pyg-professional/ # Profesionales y publicaciones (Java)
-│ ├── 💻 pyg-session/ # Gestión de sesiones entre usuarios y profesionales (Java)
-│ ├── ⚡ pyg-notification/ # Notificaciones en tiempo real con WebSocket (NestJS)
-│ ├── ⚡ pyg-content/ # Manejo de contenido y publicaciones (NestJS)
-│ ├── ⚡ pyg-search/ # Búsqueda y filtrado de profesionales (NestJS)
-│ └── 🚪 pyg-bff/ # Backend For Frontend (NestJS)
-│
-├── 🌐 frontend/
-│ └── 🧩 web/ # Aplicación principal en React + TypeScript
-│
-├── 📚 docs/ # Documentación técnica y diagramas
-│ ├── 🏗️ arquitectura.md
-│ ├── 🧩 decisiones-tecnicas.md
-│ ├── ⚙️ entorno.md
-│ └── 🖼️ diagramas/
-│
-└── 📄 README.md #
+├── backend/
+│   ├── pyg-auth/           # Autenticación y gestión de usuarios (Java)
+│   ├── pyg-owner/          # Perfiles de usuarios y mascotas (Java)
+│   ├── pyg-professional/   # Profesionales y publicaciones (Java)
+│   ├── pyg-session/        # Gestión de sesiones entre usuarios y profesionales (Java)
+│   ├── pyg-notification/   # Notificaciones en tiempo real con WebSocket (NestJS)
+│   ├── pyg-content/        # Manejo de contenido y publicaciones (NestJS)
+│   ├── pyg-search/         # Búsqueda y filtrado de profesionales (NestJS)
+│   └── pyg-bff/           # Backend For Frontend (NestJS)
+├── frontend/
+│   └── web/               # Aplicación principal en React + TypeScript
+├── docs/                  # Documentación técnica y diagramas
+│   ├── arquitectura.md
+│   ├── decisiones-tecnicas.md
+│   ├── entorno.md
+│   └── diagramas/
+└── README.md
+```
 
 ---
 
@@ -116,8 +115,8 @@ PerrosYGatos/
 | Módulo | Descripción | Estado |
 |---------|--------------|--------|
 | `pyg-auth` | Servicio de autenticación y emisión de tokens. | 🟢 En desarrollo |
-| `pyg-user` | Gestión de usuarios y mascotas. | Planificado |
-| `pyg-professional` | Información de profesionales y publicaciones. | Planificado |
+| `pyg-owner` | Gestión de usuarios y mascotas. | 🟢 En desarrollo |
+| `pyg-professional` | Información de profesionales y publicaciones. | 🟢 En desarrollo |
 | `pyg-session` | Manejo de sesiones y comunicación. | Planificado |
 | `pyg-notification` | Notificaciones en tiempo real con WebSocket. | Planificado |
 | `pyg-content` | Contenido educativo y publicaciones. | Planificado |
@@ -135,6 +134,50 @@ PerrosYGatos/
 - [ ] Implementar CI/CD con **GitHub Actions**.
 - [ ] Desarrollar **WebSocket / Socket.IO** para notificaciones y eventos en tiempo real.
 - [ ] Integrar frontend React con los servicios REST y WebSocket.
+
+---
+
+## ⚙️ Configuración de entorno (.env)
+
+Este repositorio soporta carga opcional de variables de entorno desde un archivo `.env` en la raíz del proyecto. Los servicios basados en Spring Boot usan la propiedad `spring.config.import: optional:file:.env[.properties]` para leer variables definidas localmente.
+
+Recomendaciones:
+- Crear un archivo `.env` en la raíz del workspace con las variables necesarias para desarrollo local.
+- Nunca subir el archivo `.env` con secretos a control de versiones (añadir a `.gitignore`).
+- Usa` .env.example` incluido como plantilla para revisar qué variables hacen falta.
+
+Variables comunes (ejemplos):
+
+```
+# Base de datos
+DB_URL=jdbc:postgresql://localhost:5432/pyg_auth
+DB_USERNAME=postgres
+DB_PASSWORD=root
+
+# JWT
+JWT_SECRET=tu_secreto_jwt_aqui
+JWT_EXPIRATION=86400000
+
+# Puerto del servicio
+SERVER_PORT=8081
+```
+
+Cómo usar (PowerShell, Windows):
+
+```powershell
+# en la raíz del repo
+copy .env.example .env
+# editar .env con tus valores
+cd backend/pyg-auth
+setx JWT_SECRET "mi_secreto_local"
+mvnw.cmd spring-boot:run
+```
+
+---
+
+## Documentación de arquitectura
+
+Se ha añadido un documento más detallado en `docs/ARCHITECTURE.md` con decisiones arquitectónicas, motivos para centralizar la validación de JWT en `pyg-auth`, y el flujo de comunicación entre microservicios.
 
 ---
 

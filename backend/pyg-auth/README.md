@@ -52,8 +52,22 @@ Componente	Descripción
 Método	Endpoint	Descripción	Acceso
 POST	/auth/register	Registra un nuevo usuario general	Público
 POST	/auth/login	Autentica y devuelve token JWT	Público
+POST	/auth/validate	Valida un token JWT	Protegido
 POST	/auth/logout	Invalida el token activo (en desarrollo)	Protegido
 POST	/auth/refresh	Renueva token JWT (pendiente)	Protegido
+
+> 📝 **Nota sobre validación centralizada**:
+> Se tomó la decisión de implementar un endpoint `/auth/validate` para centralizar la validación de tokens JWT.
+> Esta decisión arquitectónica tiene los siguientes beneficios:
+>
+> - **Seguridad**: Evita duplicar la lógica de validación y el secreto JWT en cada microservicio
+> - **Mantenibilidad**: Cambios en la lógica de validación solo se aplican en un lugar
+> - **Consistencia**: Garantiza que todos los servicios validen los tokens de la misma manera
+> - **Performance**: Reduce la carga de trabajo en los otros microservicios
+> - **Flexibilidad**: Facilita cambios futuros en el mecanismo de autenticación
+>
+> Los otros microservicios deberán hacer una llamada a este endpoint cuando necesiten validar un token,
+> en lugar de implementar su propia lógica de validación.
 
 ---
 
@@ -131,6 +145,7 @@ Componente	Estado
 Registro/Login	✅ Implementado
 JWT + Seguridad	✅ Funcionando
 Swagger (OpenAPI)	✅ Activo
+Validate token ✅ Implementado
 Logout	🚧 En desarrollo
 Refresh Token	🚧 Pendiente
 Tests Unitarios	🔜 Próximamente
@@ -168,6 +183,27 @@ mvnw.cmd spring-boot:run
 Luego abre en el navegador:
 👉 http://localhost:8081/swagger-ui.html
 
+
+---
+
+🐞 Known Issues y Soluciones
+
+### JwtAuthenticationFilter y Respuestas Vacías
+
+**Problema**:
+Se identificó un issue donde las peticiones a endpoints protegidos retornaban respuestas vacías (Content-Length: 0) a pesar de que la autenticación era exitosa.
+
+**Causa**:
+En `JwtAuthenticationFilter`, después de validar el token y establecer la autenticación, no se llamaba a `filterChain.doFilter()`, lo que impedía que la petición llegara al controlador.
+
+**Solución**:
+Se corrigió asegurando que `filterChain.doFilter(request, response)` se llame siempre al final del método `doFilterInternal`, permitiendo que la cadena de filtros continúe hasta el controlador.
+
+**Impacto**:
+Este fix asegura que todos los endpoints protegidos funcionen correctamente, devolviendo las respuestas esperadas cuando la autenticación es exitosa.
+
+**Lección Aprendida**:
+En filtros de Spring Security, es crucial mantener la cadena de filtros intacta llamando a `filterChain.doFilter()` después de realizar la lógica del filtro.
 
 ---
 
