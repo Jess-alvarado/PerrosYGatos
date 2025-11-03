@@ -21,4 +21,3 @@ public class JwtReader {
         return claims.get("uid", Number.class).longValue();
     }
 }
-
