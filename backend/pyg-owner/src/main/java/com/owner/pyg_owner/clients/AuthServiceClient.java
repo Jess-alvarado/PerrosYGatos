@@ -1,21 +1,17 @@
 package com.owner.pyg_owner.clients;
 
-import com.owner.pyg_owner.dto.responses.AuthValidationResponse;
+import com.owner.pyg_owner.dto.responses.TokenValidationResponse;
 import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 
-/**
- * Feign client for communication with the pyg-auth service
- * Allows validating tokens and retrieving authenticated user information
- */
 @FeignClient(
-    name = "auth-service",
-    url = "${auth.service.url:http://localhost:8081}",  // Default URL, configurable in application.yml
-    fallback = AuthServiceClientFallback.class         // Error handling fallback when pyg-auth is unavailable
+    name = "pyg-auth",
+    url = "${AUTH_SERVICE_URL:http://localhost:8081}",
+    fallback = AuthServiceClientFallback.class
 )
-@Hidden  // Ocultar de Swagger UI
+@Hidden
 public interface AuthServiceClient {
     /**
      * Validates a JWT token and returns user information
@@ -23,6 +19,6 @@ public interface AuthServiceClient {
      * @param token Full JWT token (including the "Bearer " prefix)
      * @return User information if the token is valid
      */
-    @PostMapping("/auth/validate")
-    AuthValidationResponse validateToken(@RequestHeader("Authorization") String token);
+    @PostMapping("/api/auth/validate")
+    TokenValidationResponse validateToken(@RequestHeader("Authorization") String token);
 }

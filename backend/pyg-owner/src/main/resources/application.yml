@@ -2,43 +2,49 @@ spring:
   config:
     import: optional:file:.env[.properties]
   application:
-    name: pyg-owner
+    name: ${SPRING_APPLICATION_NAME}
   mvc:
     hiddenmethod:
       filter:
         enabled: true
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/pyg_owner}
-    username: ${DATABASE_USER:postgres}
-    password: ${DATABASE_PASSWORD:root}
-    driver-class-name: org.postgresql.Driver
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USER}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: ${DB_DRIVER}
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: ${SHOW_SQL:true}
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
+    show-sql: ${SPRING_JPA_SHOW_SQL}
     properties:
       hibernate:
-        '[format_sql]': true
+        '[format_sql]': ${SPRING_JPA_PROPERTIES_FORMAT_SQL}
         dialect: org.hibernate.dialect.PostgreSQLDialect
     database-platform: org.hibernate.dialect.PostgreSQLDialect
-    open-in-view: false
+    open-in-view: ${SPRING_JPA_OPEN_IN_VIEW}
 
 server:
-  port: ${PORT:8082}
+  port: ${PORT}
   error:
     include-message: always
 
 jwt:
   secret: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION} # 24 horas en milisegundos
+  expiration: ${JWT_EXPIRATION}
 
 logging:
   level:
-    root: ${LOG_LEVEL:INFO}
-    '[com.owner.pyg_owner]': ${APP_LOG_LEVEL:DEBUG}
-    '[org.springframework.web]': ${SPRING_LOG_LEVEL:INFO}
-    '[org.hibernate.SQL]': DEBUG
-    '[org.hibernate.type.descriptor.sql.BasicBinder]': TRACE
+    root: ${LOG_LEVEL}
+    '[com.owner.pyg_owner]': ${APP_LOG_LEVEL}
+    '[org.springframework.web]': ${SPRING_LOG_LEVEL}
+    '[org.hibernate.SQL]': ${HIBERNATE_SQL_LOG_LEVEL}
+    '[org.hibernate.type.descriptor.sql.BasicBinder]': ${HIBERNATE_BINDER_LOG_LEVEL}
+    '[feign]': DEBUG
+
+# Configuración del servicio de autenticación
+auth:
+  service:
+    url: ${AUTH_SERVICE_URL:http://localhost:8081}
 
 # Configuración de Feign Client
 feign:
@@ -47,6 +53,7 @@ feign:
       default:
         connectTimeout: 5000
         readTimeout: 5000
+        loggerLevel: FULL
 
 # Configuración de Swagger/OpenAPI
 springdoc:

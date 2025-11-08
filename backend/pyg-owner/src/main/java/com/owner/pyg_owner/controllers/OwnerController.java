@@ -44,6 +44,7 @@ public class OwnerController {
             description = "No autorizado - Token JWT inválido o expirado"
         )
     })
+
     @PostMapping
     public ResponseEntity<OwnerResponse> upsertProfile(
             @Parameter(hidden = true) @RequestHeader("Authorization") String authorization,
@@ -71,6 +72,7 @@ public class OwnerController {
             description = "Perfil no encontrado"
         )
     })
+
     @GetMapping("/me")
     public ResponseEntity<OwnerResponse> getMyProfile(
             @Parameter(hidden = true) @RequestHeader("Authorization") String authorization

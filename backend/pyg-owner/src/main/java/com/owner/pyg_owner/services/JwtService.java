@@ -13,7 +13,7 @@ import java.nio.charset.StandardCharsets;
 public class JwtService {
     private static final Logger log = LoggerFactory.getLogger(JwtService.class);
 
-    @Value("${secret}")
+    @Value("${JWT_SECRET}")
     private String secretKey;
 
     public boolean isTokenValid(String token) {
