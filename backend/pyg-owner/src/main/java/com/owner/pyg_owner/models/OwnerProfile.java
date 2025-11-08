@@ -25,6 +25,7 @@ public class OwnerProfile {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "user_id", nullable = false, unique = true)
     private Long userId; // Reference to the User entity
 
     private String phone;

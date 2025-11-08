@@ -1,63 +1,115 @@
+version: '3.9'
 
 services:
   postgres:
     image: postgres:15
     environment:
-      POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-root}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-perrosygatos}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   pyg-auth:
     build:
       context: ./backend/pyg-auth
     container_name: pyg-auth
     environment:
+      - SPRING_APPLICATION_NAME=${SPRING_APPLICATION_NAME_AUTH}
       - SPRING_DATASOURCE_URL=${AUTH_DATABASE_URL:-jdbc:postgresql://postgres:5432/pyg_auth}
       - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
-      - jwt.secret=${JWT_SECRET}
-      - jwt.expiration=${JWT_EXPIRATION}
-      - SERVER_PORT=8081
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=${DB_DRIVER}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=${SPRING_JPA_HIBERNATE_DDL_AUTO}
+      - SPRING_JPA_SHOW_SQL=${SPRING_JPA_SHOW_SQL}
+      - SPRING_JPA_FORMAT_SQL=${SPRING_JPA_FORMAT_SQL}
+      - SPRING_JPA_OPEN_IN_VIEW=${SPRING_JPA_OPEN_IN_VIEW}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - SERVER_PORT=${SERVER_PORT_AUTH}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - APP_LOG_LEVEL=${APP_LOG_LEVEL}
+      - SPRING_LOG_LEVEL=${SPRING_LOG_LEVEL}
+      - HIBERNATE_SQL_LOG_LEVEL=${HIBERNATE_SQL_LOG_LEVEL}
+      - HIBERNATE_BINDER_LOG_LEVEL=${HIBERNATE_BINDER_LOG_LEVEL}
+      - AUTH_SERVICE_URL=http://pyg-auth:8081
+
     ports:
-      - "8081:8081"
+      - "${SERVER_PORT_AUTH}:${SERVER_PORT_AUTH}"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   pyg-owner:
     build:
       context: ./backend/pyg-owner
     container_name: pyg-owner
     environment:
+      - SPRING_APPLICATION_NAME=${SPRING_APPLICATION_NAME_OWNER}
       - SPRING_DATASOURCE_URL=${OWNER_DATABASE_URL:-jdbc:postgresql://postgres:5432/pyg_owner}
       - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
-      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://pyg-auth:8081}
-      - SERVER_PORT=8082
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=${DB_DRIVER}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=${SPRING_JPA_HIBERNATE_DDL_AUTO}
+      - SPRING_JPA_SHOW_SQL=${SPRING_JPA_SHOW_SQL}
+      - SPRING_JPA_PROPERTIES_FORMAT_SQL=${SPRING_JPA_PROPERTIES_FORMAT_SQL}
+      - SPRING_JPA_OPEN_IN_VIEW=${SPRING_JPA_OPEN_IN_VIEW}
+      - AUTH_SERVICE_URL=http://pyg-auth:8081
+      - SERVER_PORT=${SERVER_PORT_OWNER}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - APP_LOG_LEVEL=${APP_LOG_LEVEL}
+      - SPRING_LOG_LEVEL=${SPRING_LOG_LEVEL}
+      - HIBERNATE_SQL_LOG_LEVEL=${HIBERNATE_SQL_LOG_LEVEL}
+      - HIBERNATE_BINDER_LOG_LEVEL=${HIBERNATE_BINDER_LOG_LEVEL}
+      - FEIGN_CONNECT_TIMEOUT=${FEIGN_CONNECT_TIMEOUT}
+      - FEIGN_READ_TIMEOUT=${FEIGN_READ_TIMEOUT}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
     ports:
-      - "8082:8082"
+      - "${SERVER_PORT_OWNER}:${SERVER_PORT_OWNER}"
     depends_on:
-      - postgres
-      - pyg-auth
+      postgres:
+        condition: service_healthy
+      pyg-auth:
+        condition: service_started
 
   pyg-professional:
     build:
       context: ./backend/pyg-professional
     container_name: pyg-professional
     environment:
+      - SPRING_APPLICATION_NAME=${SPRING_APPLICATION_NAME_PROFESSIONAL}
       - SPRING_DATASOURCE_URL=${PROFESSIONAL_DATABASE_URL:-jdbc:postgresql://postgres:5432/pyg_professional}
       - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=${DB_DRIVER}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=${SPRING_JPA_HIBERNATE_DDL_AUTO}
+      - SPRING_JPA_SHOW_SQL=${SPRING_JPA_SHOW_SQL}
+      - SPRING_JPA_FORMAT_SQL=${SPRING_JPA_FORMAT_SQL}
+      - SPRING_JPA_OPEN_IN_VIEW=${SPRING_JPA_OPEN_IN_VIEW}
       - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://pyg-auth:8081}
-      - SERVER_PORT=8083
+      - SERVER_PORT=${SERVER_PORT_PROFESSIONAL}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - APP_LOG_LEVEL=${APP_LOG_LEVEL}
+      - SPRING_LOG_LEVEL=${SPRING_LOG_LEVEL}
+      - HIBERNATE_SQL_LOG_LEVEL=${HIBERNATE_SQL_LOG_LEVEL}
+      - HIBERNATE_BINDER_LOG_LEVEL=${HIBERNATE_BINDER_LOG_LEVEL}
     ports:
-      - "8083:8083"
+      - "${SERVER_PORT_PROFESSIONAL}:${SERVER_PORT_PROFESSIONAL}"
     depends_on:
-      - postgres
-      - pyg-auth
+      postgres:
+        condition: service_healthy
+      pyg-auth:
+        condition: service_started
 
 volumes:
   pgdata:

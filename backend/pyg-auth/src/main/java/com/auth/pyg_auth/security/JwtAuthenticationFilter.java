@@ -30,6 +30,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
+        // Rutas que no requieren validación JWT - continuar sin autenticar
+        String path = request.getRequestURI();
+        if (path.startsWith("/api/auth/") || 
+            path.startsWith("/v3/api-docs") || 
+            path.startsWith("/swagger-ui")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         final String token = getTokenFromRequest(request);
         final String username;
 
