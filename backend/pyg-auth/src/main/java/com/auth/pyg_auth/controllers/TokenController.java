@@ -42,10 +42,11 @@ public class TokenController {
     public ResponseEntity<TokenValidationResponse> validateToken(
             @RequestHeader(value = "Authorization", required = false) String authHeader
     ) {
+        System.out.println("🔍 AUTH HEADER RECIBIDO: " + authHeader);
         log.info("Validation request received");
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.warn("Authorization header missing or malformed: {}", authHeader);
+        if (authHeader == null || authHeader.isBlank()) {
+            log.warn("Authorization header missing or blank");
             return ResponseEntity.status(401).body(
                 TokenValidationResponse.builder()
                     .valid(false)
@@ -56,13 +57,16 @@ public class TokenController {
         try {
             log.info("Validating token from header: {}", authHeader);
 
-            // 1. Clean token (remove "Bearer ")
-            String token = authHeader.substring(7);
-            log.info("Token extracted: {}", token);
+            // 1. Extraer token: aceptar con o sin prefijo "Bearer ", con espacios variables y case-insensitive
+            String header = authHeader.trim();
+            String token = header.replaceFirst("(?i)^Bearer\\s+", "").trim();
+            log.info("Token extracted (normalized): {}", token);
 
             // 2. Extract claims
             Claims claims = jwtService.getAllClaims(token);
-            log.debug("Extracted claims: {}", claims);
+            log.info("Extracted claims successfully: subject={}, uid={}, role={}",
+                claims.getSubject(), claims.get("uid"), claims.get("role"));
+            System.out.println("AUTH VALIDATE - Claims extracted: " + claims);
 
             // 3. Build response
             TokenValidationResponse resp = TokenValidationResponse.builder()
@@ -73,11 +77,14 @@ public class TokenController {
                     .expiresAt(claims.getExpiration().getTime())
                     .build();
 
-            log.debug("Validation response: {}", resp);
+            log.info("Returning validation response: {}", resp);
+            System.out.println("AUTH VALIDATE - Response to send: " + resp);
             return ResponseEntity.ok(resp);
 
         } catch (Exception e) {
-            log.warn("Failed validating token: {}", e.getMessage());
+            log.error("Failed validating token: {}", e.getMessage(), e);
+            System.out.println("AUTH VALIDATE - EXCEPTION: " + e.getClass().getName() + " - " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.status(401).body(
                 TokenValidationResponse.builder()
                     .valid(false)

@@ -23,10 +23,10 @@ import io.jsonwebtoken.Claims;
 
 @Service
 public class JwtService {
-    @Value("${jwt.secret}")
+    @Value("${JWT_SECRET}")
     private String secretKey;
 
-    @Value("${jwt.expiration}")
+    @Value("${JWT_EXPIRATION}")
     private Long jwtExpirationMs;
 
     // User token generation

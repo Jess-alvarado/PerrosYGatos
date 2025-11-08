@@ -2,7 +2,7 @@ spring:
   config:
     import: optional:file:.env[.properties]
   application:
-    name: ${SPRING_APPLICATION_NAME:pyg-auth}
+    name: ${SPRING_APPLICATION_NAME}
   mvc:
     hiddenmethod:
       filter:
@@ -15,37 +15,37 @@ spring:
       fail-on-unknown-properties: false
     default-property-inclusion: non_null
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/pyg_auth}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:root}
-    driver-class-name: ${DB_DRIVER:org.postgresql.Driver}
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: ${DB_DRIVER}
   jpa:
     hibernate:
-      ddl-auto: ${JPA_HIBERNATE_DDL_AUTO:update}
-    show-sql: ${JPA_SHOW_SQL:true}
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO}
+    show-sql: ${SPRING_JPA_SHOW_SQL}
     properties:
       hibernate:
-        '[format_sql]': ${JPA_FORMAT_SQL:true}
-        dialect: ${DB_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
-    database-platform: ${DB_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
-    open-in-view: ${JPA_OPEN_IN_VIEW:false}
+        '[format_sql]': ${SPRING_JPA_PROPERTIES_FORMAT_SQL}
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: ${SPRING_JPA_OPEN_IN_VIEW}
 
 server:
-  port: ${SERVER_PORT:8081}
+  port: ${SERVER_PORT}
   error:
     include-message: always
 
 jwt:
   secret: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION:86400000} # 24 horas en milisegundos
+  expiration: ${JWT_EXPIRATION}
 
 logging:
   level:
-    root: ${LOG_LEVEL:INFO}
-    '[com.auth.pyg_auth]': ${APP_LOG_LEVEL:DEBUG}
-    '[org.springframework.web]': ${SPRING_LOG_LEVEL:INFO}
-    '[org.hibernate.SQL]': DEBUG
-    '[org.hibernate.type.descriptor.sql.BasicBinder]': TRACE
+    root: ${LOG_LEVEL}
+    '[com.auth.pyg_auth]': ${APP_LOG_LEVEL}
+    '[org.springframework.web]': ${SPRING_LOG_LEVEL}
+    '[org.hibernate.SQL]': ${HIBERNATE_SQL_LOG_LEVEL}
+    '[org.hibernate.type.descriptor.sql.BasicBinder]': ${HIBERNATE_BINDER_LOG_LEVEL}
 
 # Swagger configuration
 springdoc:
