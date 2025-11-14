@@ -66,7 +66,7 @@ pyg-owner/
 | Método | Endpoint | Descripción | Acceso |
 |--------|----------|-------------|--------|
 | **POST** | `/owners` | Crear o actualizar perfil de dueño | Protegido (ROLE_OWNER) |
-| **GET** | `/owners/me` | Obtener perfil del dueño autenticado | Protegido (ROLE_OWNER) |
+| **GET** | `/owners/profile` | Obtener perfil del dueño autenticado | Protegido (ROLE_OWNER) |
 
 ### 🐕 Gestión de Mascotas
 
@@ -74,8 +74,8 @@ pyg-owner/
 |--------|----------|-------------|--------|--------|
 | **POST** | `/pets` | Registrar nueva mascota | Protegido (ROLE_OWNER) | ✅ Implementado |
 | **GET** | `/pets` | Listar mascotas del dueño autenticado | Protegido (ROLE_OWNER) | ✅ Implementado |
+| **GET** | `/pets/{id}` | Obtener detalles de una mascota específica | Protegido (ROLE_OWNER) | ✅ Implementado |
 | **PUT** | `/pets/{id}` | Actualizar datos de una mascota | Protegido (ROLE_OWNER) | 🚧 Pendiente |
-| **GET** | `/pets/{id}` | Obtener detalles de una mascota específica | Protegido (ROLE_OWNER) | 🚧 Pendiente |
 
 ---
 
@@ -109,7 +109,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ---
 
-### 🔹 Obtener perfil propio (`GET /owners/me`)
+### 🔹 Obtener perfil propio (`GET /owners/profile`)
 
 **Headers:**
 ```
@@ -331,10 +331,10 @@ Representa una mascota registrada por un dueño.
 |-----------|--------|
 | Crear/Actualizar Owner | ✅ Implementado |
 | Obtener perfil propio | ✅ Implementado |
-| Registrar mascota | Pendiente |
-| Listar mascotas | Pendiente |
-| Actualizar mascota | Pendiente |
-| Obtener mascota específica | Pendiente |
+| Registrar mascota | ✅ Implementado |
+| Listar mascotas | ✅ Implementado |
+| Obtener mascota específica | ✅ Implementado |
+| Actualizar mascota | 🚧 Pendiente |
 | Validación JWT vía Feign | ✅ Funcionando |
 | Spring Security | ✅ Configurado |
 | Swagger (OpenAPI) | ✅ Activo |
@@ -434,7 +434,6 @@ public class PygOwnerApplication {
 ## 📬 Próximos pasos
 
 - [ ] Implementar `PUT /pets/{id}` para actualizar mascotas
-- [ ] Implementar `GET /pets/{id}` para obtener mascota específica
 - [ ] Agregar validaciones adicionales de negocio
 - [ ] Implementar paginación en listado de mascotas
 - [ ] Agregar filtros de búsqueda (por especie, raza, etc.)
@@ -447,7 +446,7 @@ public class PygOwnerApplication {
 ## 🐾 Autora
 
 Desarrollado por **Jessica Alvarado**
-Proyecto: **PerrosYGatos**  
+Proyecto: **PerrosYGatos**
 Fines educativos y de portafolio técnico.
 
 ---

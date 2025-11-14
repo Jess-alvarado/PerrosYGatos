@@ -73,7 +73,7 @@ public class OwnerController {
         )
     })
 
-    @GetMapping("/me")
+    @GetMapping("/profile")
     public ResponseEntity<OwnerResponse> getMyProfile(
             @Parameter(hidden = true) @RequestHeader("Authorization") String authorization
     ) {
