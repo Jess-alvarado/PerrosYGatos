@@ -79,16 +79,16 @@ PerrosYGatos/
 
 ## 🧩 Descripción de los microservicios
 
-| Servicio | Descripción | Lenguaje / Tecnología |
-|-----------|--------------|----------------------|
-| **Auth** | Registro, login, roles y emisión de tokens JWT. | Java + Spring Security |
-| **User** | Gestión de usuarios dueños de mascotas y sus perfiles. | Java + Spring Boot + PostgreSQL |
-| **Professional** | Información de profesionales, especialidades y disponibilidad. | Java + Spring Boot |
-| **Session** | Manejo de sesiones entre usuarios y profesionales (videollamadas, recordatorios). | Java + Spring Boot + WebSocket |
-| **Notification** | Envío de notificaciones en tiempo real al frontend. | NestJS + Socket.IO |
-| **Content** | Gestión de publicaciones y contenido educativo. | NestJS + TypeORM + PostgreSQL |
-| **Search** | Filtrado y búsqueda de profesionales por especialidad o ubicación. | NestJS + Elasticsearch (futuro) |
-| **BFF (Gateway)** | Puente entre el frontend y los microservicios. | Java + Spring Cloud Gateway |
+| Servicio | Descripción | Lenguaje / Tecnología | Puerto |
+|-----------|--------------|----------------------|--------|
+| **pyg-auth** | Registro, login, validación de tokens JWT y gestión de roles. | Java + Spring Security + JWT | 8081 |
+| **pyg-owner** | Gestión de perfiles de dueños de mascotas y sus animales. | Java + Spring Boot + PostgreSQL | 8082 |
+| **pyg-professional** | Información de profesionales, especialidades y publicaciones. | Java + Spring Boot + PostgreSQL | 8083 |
+| **pyg-session** | Manejo de sesiones entre usuarios y profesionales (videollamadas, recordatorios). | Java + Spring Boot + WebSocket | Planificado |
+| **pyg-notification** | Envío de notificaciones en tiempo real al frontend. | NestJS + Socket.IO | Planificado |
+| **pyg-content** | Gestión de publicaciones y contenido educativo. | NestJS + TypeORM + PostgreSQL | Planificado |
+| **pyg-search** | Filtrado y búsqueda de profesionales por especialidad o ubicación. | NestJS + Elasticsearch (futuro) | Planificado |
+| **pyg-bff** | Backend For Frontend - Gateway y orquestación de microservicios. | NestJS / Spring Cloud Gateway | Planificado |
 
 ---
 
@@ -112,72 +112,274 @@ PerrosYGatos/
 
 ## 🧱 Estado del proyecto
 
+### 🎯 Fase MVP Actual
+
+| Módulo | Descripción | Estado | Endpoints Principales |
+|---------|--------------|--------|----------------------|
+| `pyg-auth` | Servicio de autenticación y emisión de tokens JWT. | ✅ MVP Completo | `/auth/register`, `/auth/login`, `/auth/validate` |
+| `pyg-owner` | Gestión de perfiles de dueños y mascotas. | ✅ MVP Completo | `/owners` (POST/GET), `/pets` (POST/GET/GET by ID) |
+| `pyg-professional` | Información de profesionales y publicaciones. | 🟡 En desarrollo activo | `/professionals` (POST/GET), `/posts` (POST/GET) |
+| `frontend/web` | Interfaz principal en React + TypeScript. | 🔜 Próxima fase | Dashboard, búsqueda, perfiles |
+
+### 📋 Funcionalidades Implementadas
+
+#### ✅ pyg-auth (Puerto 8081)
+- Registro de usuarios con roles (OWNER/PROFESSIONAL)
+- Login con generación de JWT
+- Validación centralizada de tokens
+- Documentación Swagger completa
+
+#### ✅ pyg-owner (Puerto 8082)
+- Creación y actualización de perfiles de dueños
+- Registro de mascotas (nombre, tipo, raza, edad, esterilización, sexo)
+- Listado de mascotas por dueño
+- Obtener mascota específica con verificación de ownership
+- Validación custom de tipos de mascota (DOG/CAT)
+- Seguridad: Solo acceso a recursos propios
+
+#### 🟡 pyg-professional (Puerto 8083)
+- Creación de perfiles profesionales (en desarrollo)
+- Gestión de publicaciones educativas (en desarrollo)
+- Especialidades y experiencia (en desarrollo)
+
+### 🔮 Próximas Fases
+
+#### Fase 2: Frontend y Funcionalidades Adicionales
+- [ ] Desarrollo del frontend React
+- [ ] Implementar UPDATE endpoints (mascotas, perfiles)
+- [ ] Implementar DELETE endpoints (soft delete)
+- [ ] Refresh token en pyg-auth
+- [ ] Paginación y filtros avanzados
+- [ ] Carga de imágenes (perfiles y mascotas)
+
+#### Fase 3: Servicios Avanzados
 | Módulo | Descripción | Estado |
 |---------|--------------|--------|
-| `pyg-auth` | Servicio de autenticación y emisión de tokens. | 🟢 En desarrollo |
-| `pyg-owner` | Gestión de usuarios y mascotas. | 🟢 En desarrollo |
-| `pyg-professional` | Información de profesionales y publicaciones. | 🟢 En desarrollo |
-| `pyg-session` | Manejo de sesiones y comunicación. | Planificado |
-| `pyg-notification` | Notificaciones en tiempo real con WebSocket. | Planificado |
-| `pyg-content` | Contenido educativo y publicaciones. | Planificado |
-| `pyg-search` | Búsqueda y filtrado de profesionales. | Planificado |
-| `frontend` | Interfaz principal en React. | Planificado |
+| `pyg-session` | Agendamiento y gestión de sesiones. | ⏳ Planificado |
+| `pyg-notification` | Notificaciones en tiempo real con WebSocket. | ⏳ Planificado |
+| `pyg-content` | Sistema de contenido educativo avanzado. | ⏳ Planificado |
+| `pyg-search` | Búsqueda con filtros y Elasticsearch. | ⏳ Planificado |
+| `pyg-bff` | Gateway y orquestación de servicios. | ⏳ Planificado |
 
 ---
 
-## 🚀 Próximos pasos
+## 🚀 Roadmap y Próximos Pasos
 
-- [ ] Definir la estructura base de todos los microservicios (Java y NestJS).
-- [ ] Configurar **Spring Cloud Gateway** como punto de entrada (BFF).
-- [ ] Implementar **Docker** para contenedorización y orquestación.
-- [ ] Crear documentación técnica en `/docs` (arquitectura, flujos, decisiones).
-- [ ] Implementar CI/CD con **GitHub Actions**.
-- [ ] Desarrollar **WebSocket / Socket.IO** para notificaciones y eventos en tiempo real.
-- [ ] Integrar frontend React con los servicios REST y WebSocket.
+### 🎯 Fase Actual: Completar pyg-professional MVP
+- [x] ✅ pyg-auth: Autenticación y validación JWT
+- [x] ✅ pyg-owner: CRUD de perfiles y mascotas
+- [ ] 🟡 pyg-professional: Endpoints principales (en progreso)
+  - [ ] POST /professionals - Crear perfil profesional
+  - [ ] GET /professionals/profile - Obtener perfil propio
+
+### 📱 Siguiente: Desarrollo Frontend
+- [ ] Configurar proyecto React + TypeScript
+- [ ] Implementar autenticación en frontend
+- [ ] Dashboard para dueños
+- [ ] Dashboard para profesionales
+- [ ] Búsqueda y visualización de profesionales
+- [ ] Gestión de mascotas
+- [ ] Visualización de publicaciones
+
+### 🔧 Mejoras Post-MVP
+- [ ] Implementar endpoints UPDATE (PUT) para todos los recursos
+- [ ] Implementar endpoints DELETE (soft delete)
+- [ ] Refresh token y logout en pyg-auth
+- [ ] Paginación en listados
+- [ ] Filtros y búsqueda avanzada
+- [ ] Carga de imágenes (AWS S3 / Cloudinary)
+- [ ] Validaciones de negocio adicionales
+- [ ] Tests unitarios e integración
+
+### 🏗️ Infraestructura y DevOps
+- [x] ✅ Dockerizar todos los microservicios (pyg-auth, pyg-owner, pyg-professional)
+- [x] ✅ Docker Compose para desarrollo local (funcionando correctamente)
+- [ ] Configurar Spring Cloud Gateway (BFF)
+- [ ] Implementar CI/CD con GitHub Actions
+- [ ] Despliegue en cloud (AWS/Heroku/Railway)
+
+### 🚀 Funcionalidades Avanzadas (Fase 3)
+- [ ] pyg-session: Agendamiento de citas
+- [ ] pyg-notification: WebSocket para notificaciones en tiempo real
+- [ ] Sistema de reviews y calificaciones
+- [ ] Chat en tiempo real entre usuarios y profesionales
+- [ ] Integración con pasarelas de pago
+- [ ] Elasticsearch para búsqueda avanzada
 
 ---
 
-## ⚙️ Configuración de entorno (.env)
+## 🐳 Ejecución con Docker Compose
 
-Este repositorio soporta carga opcional de variables de entorno desde un archivo `.env` en la raíz del proyecto. Los servicios basados en Spring Boot usan la propiedad `spring.config.import: optional:file:.env[.properties]` para leer variables definidas localmente.
+### ✅ Configuración Actual
 
-Recomendaciones:
-- Crear un archivo `.env` en la raíz del workspace con las variables necesarias para desarrollo local.
-- Nunca subir el archivo `.env` con secretos a control de versiones (añadir a `.gitignore`).
-- Usa` .env.example` incluido como plantilla para revisar qué variables hacen falta.
+El proyecto cuenta con un `docker-compose.yml` completamente funcional que levanta:
+- **PostgreSQL 15** con bases de datos separadas para cada servicio
+- **pyg-auth** (Puerto 8081)
+- **pyg-owner** (Puerto 8082)
+- **pyg-professional** (Puerto 8083)
 
-Variables comunes (ejemplos):
+### 🚀 Cómo Ejecutar
 
-```
-# Base de datos
-DB_URL=jdbc:postgresql://localhost:5432/pyg_auth
+1. **Configurar variables de entorno:**
+   ```powershell
+   # Copiar el archivo de ejemplo
+   copy .env.example .env
+
+   # Editar .env con tus valores
+   ```
+
+2. **Levantar todos los servicios:**
+   ```powershell
+   docker-compose up -d
+   ```
+
+3. **Ver logs:**
+   ```powershell
+   # Todos los servicios
+   docker-compose logs -f
+
+   # Solo un servicio específico
+   docker-compose logs -f pyg-auth
+   ```
+
+4. **Detener servicios:**
+   ```powershell
+   docker-compose down
+   ```
+
+5. **Reconstruir imágenes (después de cambios en código):**
+   ```powershell
+   docker-compose up -d --build
+   ```
+
+### 📋 Endpoints Disponibles
+
+Una vez levantados los servicios:
+- **pyg-auth**: http://localhost:8081/swagger-ui.html
+- **pyg-owner**: http://localhost:8082/swagger-ui.html
+- **pyg-professional**: http://localhost:8083/swagger-ui.html
+- **PostgreSQL**: localhost:5432
+
+### 🗄️ Bases de Datos
+
+El `init.sql` crea automáticamente 3 bases de datos:
+- `pyg_auth` - Usuarios y autenticación
+- `pyg_owner` - Perfiles de dueños y mascotas
+- `pyg_professional` - Perfiles profesionales y publicaciones
+
+---
+
+## ⚙️ Configuración de Entorno (.env)
+
+Este repositorio utiliza un archivo `.env` para gestionar variables de entorno. Los servicios Spring Boot leen estas variables mediante `spring.config.import: optional:file:.env[.properties]`.
+
+### Variables Principales
+
+```env
+# Base de Datos
 DB_USERNAME=postgres
 DB_PASSWORD=root
+DB_DRIVER=org.postgresql.Driver
+
+# URLs de Bases de Datos
+AUTH_DATABASE_URL=jdbc:postgresql://postgres:5432/pyg_auth
+OWNER_DATABASE_URL=jdbc:postgresql://postgres:5432/pyg_owner
+PROFESSIONAL_DATABASE_URL=jdbc:postgresql://postgres:5432/pyg_professional
 
 # JWT
-JWT_SECRET=tu_secreto_jwt_aqui
+JWT_SECRET=tu_secreto_jwt_super_seguro_aqui
 JWT_EXPIRATION=86400000
 
-# Puerto del servicio
-SERVER_PORT=8081
+# Puertos
+SERVER_PORT_AUTH=8081
+SERVER_PORT_OWNER=8082
+SERVER_PORT_PROFESSIONAL=8083
+
+# Spring JPA
+SPRING_JPA_HIBERNATE_DDL_AUTO=update
+SPRING_JPA_SHOW_SQL=false
+
+# Nombres de Aplicaciones
+SPRING_APPLICATION_NAME_AUTH=pyg-auth
+SPRING_APPLICATION_NAME_OWNER=pyg-owner
+SPRING_APPLICATION_NAME_PROFESSIONAL=pyg-professional
 ```
 
-Cómo usar (PowerShell, Windows):
+### 📝 Recomendaciones
+
+- ✅ Crear archivo `.env` desde `.env.example`
+- ✅ Nunca subir `.env` con secretos al repositorio (está en `.gitignore`)
+- ✅ Usar valores seguros en producción
+- ✅ Regenerar `JWT_SECRET` para cada entorno
+
+### 🔧 Ejecución Local (Sin Docker)
+
+Si prefieres ejecutar sin Docker:
 
 ```powershell
-# en la raíz del repo
+# Configurar variables de entorno
 copy .env.example .env
-# editar .env con tus valores
+
+# Ejecutar cada servicio
 cd backend/pyg-auth
-setx JWT_SECRET "mi_secreto_local"
+mvnw.cmd spring-boot:run
+
+# En otra terminal
+cd backend/pyg-owner
+mvnw.cmd spring-boot:run
+
+# En otra terminal
+cd backend/pyg-professional
 mvnw.cmd spring-boot:run
 ```
 
+**Nota:** Necesitarás PostgreSQL corriendo localmente y crear las bases de datos manualmente.
+
 ---
 
-## Documentación de arquitectura
+## 📚 Documentación Técnica
 
-Se ha añadido un documento más detallado en `docs/ARCHITECTURE.md` con decisiones arquitectónicas, motivos para centralizar la validación de JWT en `pyg-auth`, y el flujo de comunicación entre microservicios.
+### Documentos Disponibles
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Decisiones arquitectónicas y patrones de diseño
+- **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - Problemas comunes y soluciones
+- **[pyg-auth/README.md](backend/pyg-auth/README.md)** - Documentación del servicio de autenticación
+- **[pyg-owner/README.md](backend/pyg-owner/README.md)** - Documentación del servicio de dueños y mascotas
+
+### Patrones Arquitectónicos Clave
+
+#### 🔐 Validación JWT Centralizada
+Todos los microservicios delegan la validación de tokens JWT a `pyg-auth` mediante llamadas HTTP con **Spring Cloud OpenFeign**:
+
+```
+Cliente → pyg-owner/pyg-professional (con JWT)
+    ↓
+    Filtro JWT intercepta
+    ↓
+    Llama a pyg-auth/api/auth/validate
+    ↓
+    pyg-auth valida y retorna info del usuario
+    ↓
+    SecurityContext se establece
+    ↓
+    Request continúa al controlador
+```
+
+**Ventajas:**
+- ✅ Secreto JWT solo en un servicio
+- ✅ Lógica de validación centralizada
+- ✅ Facilita rotación de claves
+- ✅ Consistencia en todos los servicios
+
+#### 🛡️ Seguridad a Nivel de Datos
+Todos los endpoints verifican **ownership** de recursos:
+- `GET /pets/{id}` → Solo retorna si la mascota pertenece al usuario autenticado
+- Queries custom: `findByIdAndOwnerUserId(petId, userId)`
+- Previene **IDOR** (Insecure Direct Object Reference)
+
+#### ✅ Validación en Capas
+1. **Bean Validation** (`@NotBlank`, `@Min`, etc.)
+2. **Validaciones Custom** (`@ValidPetType`)
+3. **Lógica de Negocio** (verificar perfil existe antes de crear mascota)
 
 ---
 
