@@ -76,7 +76,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // Establecer el contexto de seguridad
             org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(authToken);
 
-            // Opcional: compartir info con capas posteriores
             request.setAttribute("auth.userId", validation.getUserId());
             request.setAttribute("auth.username", validation.getUsername());
             request.setAttribute("auth.role", validation.getRole());

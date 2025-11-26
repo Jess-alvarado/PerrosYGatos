@@ -19,7 +19,7 @@ public class TokenValidationResponse {
     @Schema(description = "Nombre de usuario", example = "jess.alvarado")
     private String username;
 
-    @Schema(description = "Rol del usuario", example = "ROLE_OWNER")
+    @Schema(description = "Rol del usuario", example = "ROLE_PROFESSIONAL")
     private String role;
 
     @Schema(description = "Token válido o no", example = "true")
