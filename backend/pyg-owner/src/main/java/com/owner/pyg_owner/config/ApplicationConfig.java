@@ -12,8 +12,8 @@ public class ApplicationConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        // No se usa realmente porque validas con JWT,
-        // pero Spring lo necesita para crear el AuthenticationProvider.
+        // This is not actually used because authentication is delegated to JWT validation,
+        // but Spring requires a UserDetailsService to build the AuthenticationProvider.
         return username -> null;
     }
 

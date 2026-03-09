@@ -1,5 +1,6 @@
 package com.owner.pyg_owner.security;
 
+import com.owner.pyg_owner.clients.AuthServiceClient;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,11 +10,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-
-import com.owner.pyg_owner.clients.AuthServiceClient;
 
 import java.io.IOException;
 import java.util.List;
@@ -27,65 +29,67 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final AuthServiceClient authServiceClient;
 
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
-            @NonNull FilterChain filterChain)
-            throws ServletException, IOException {
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+        return path.startsWith("/swagger-ui/")
+                || path.startsWith("/v3/api-docs/")
+                || path.startsWith("/swagger-resources/")
+                || path.startsWith("/actuator/");
+    }
+
+    @Override
+    protected void doFilterInternal(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain
+    ) throws ServletException, IOException {
 
         final String incomingAuthHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        // Enforce presence of Authorization header (service protegido)
         if (!StringUtils.hasText(incomingAuthHeader)) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Authorization header missing");
+            response.getWriter().write("Authorization header is missing");
             return;
         }
 
         try {
-            // Normalizar header: aceptar tanto "Bearer <token>" como "<token>"
             String normalizedHeader = incomingAuthHeader.trim();
 
             if (!normalizedHeader.regionMatches(true, 0, "Bearer ", 0, 7)) {
                 normalizedHeader = "Bearer " + normalizedHeader;
             }
 
-            // Validación centralizada en pyg-auth. Pasamos el header normalizado.
             var validation = authServiceClient.validateToken(normalizedHeader);
 
             if (validation == null || !validation.isValid()) {
-                log.warn("Token validation failed");
+                log.warn("JWT validation failed");
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 response.getWriter().write("Invalid or expired token");
                 return;
             }
 
-            log.debug("Token validated successfully for user: {}", validation.getUsername());
+            log.debug("JWT validated successfully for user {}", validation.getUsername());
 
-            // Crear autoridades de Spring Security a partir del rol validado
-            var authorities = List
-                    .of(new org.springframework.security.core.authority.SimpleGrantedAuthority(validation.getRole()));
+            var authorities = List.of(new SimpleGrantedAuthority(validation.getRole()));
 
-            // Crear token de autenticación para Spring Security
-            var authToken = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+            var authenticationToken = new UsernamePasswordAuthenticationToken(
                     validation.getUsername(),
                     null,
-                    authorities);
+                    authorities
+            );
 
-            // Establecer detalles adicionales
-            authToken.setDetails(validation);
+            authenticationToken.setDetails(validation);
+            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 
-            // Establecer el contexto de seguridad
-            org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(authToken);
-
-            // Opcional: compartir info con capas posteriores
             request.setAttribute("auth.userId", validation.getUserId());
             request.setAttribute("auth.username", validation.getUsername());
             request.setAttribute("auth.role", validation.getRole());
 
             filterChain.doFilter(request, response);
         } catch (Exception ex) {
-            log.error("Token validation error: {}", ex.getMessage());
+            log.error("JWT validation error: {}", ex.getMessage(), ex);
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            response.getWriter().write("Authentication service unavailable or token invalid");
+            response.getWriter().write("Authentication service unavailable or token is invalid");
         }
     }
 }

@@ -1,35 +1,26 @@
 package com.owner.pyg_owner.controllers;
 
+import com.owner.pyg_owner.dto.requests.PetRequest;
+import com.owner.pyg_owner.dto.responses.PetResponse;
+import com.owner.pyg_owner.services.PetService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.owner.pyg_owner.dto.requests.PetRequest;
-import com.owner.pyg_owner.dto.responses.PetResponse;
-import com.owner.pyg_owner.services.PetService;
-
-
 @RestController
 @RequestMapping("/pets")
-@Tag(name = "Mascotas", description = "API para gestionar las mascotas de los dueños")
+@Tag(name = "Pets", description = "API for managing pets linked to owner profiles")
 @SecurityRequirement(name = "bearerAuth")
 public class PetController {
 
@@ -40,27 +31,27 @@ public class PetController {
     }
 
     @Operation(
-        summary = "Registrar nueva mascota",
-        description = "Registra una nueva mascota asociada al dueño autenticado. El dueño debe tener un perfil creado previamente."
+            summary = "Create a new pet",
+            description = "Creates a new pet linked to the authenticated user's owner profile. The owner profile must exist first."
     )
     @ApiResponses({
-        @ApiResponse(
-            responseCode = "200",
-            description = "Mascota registrada exitosamente",
-            content = @Content(schema = @Schema(implementation = PetResponse.class))
-        ),
-        @ApiResponse(
-            responseCode = "400",
-            description = "Datos de entrada inválidos (validaciones fallidas)"
-        ),
-        @ApiResponse(
-            responseCode = "401",
-            description = "No autorizado - Token JWT inválido o expirado"
-        ),
-        @ApiResponse(
-            responseCode = "404",
-            description = "Perfil de dueño no encontrado - Debe crear su perfil primero"
-        )
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Pet created successfully",
+                    content = @Content(schema = @Schema(implementation = PetResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Invalid request data"
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - Invalid or expired JWT token"
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Owner profile not found"
+            )
     })
     @PostMapping
     public ResponseEntity<PetResponse> addPet(
@@ -72,23 +63,23 @@ public class PetController {
     }
 
     @Operation(
-        summary = "Listar mascotas propias",
-        description = "Obtiene la lista completa de mascotas registradas por el dueño autenticado"
+            summary = "List current user's pets",
+            description = "Returns all pets linked to the authenticated user's owner profile"
     )
     @ApiResponses({
-        @ApiResponse(
-            responseCode = "200",
-            description = "Lista de mascotas recuperada exitosamente (puede estar vacía)",
-            content = @Content(array = @ArraySchema(schema = @Schema(implementation = PetResponse.class)))
-        ),
-        @ApiResponse(
-            responseCode = "401",
-            description = "No autorizado - Token JWT inválido o expirado"
-        ),
-        @ApiResponse(
-            responseCode = "404",
-            description = "Perfil de dueño no encontrado"
-        )
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Pets retrieved successfully",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = PetResponse.class)))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - Invalid or expired JWT token"
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Owner profile not found"
+            )
     })
     @GetMapping
     public ResponseEntity<List<PetResponse>> getPetsByOwner(
@@ -98,28 +89,28 @@ public class PetController {
     }
 
     @Operation(
-        summary = "Obtener mascota específica",
-        description = "Obtiene los detalles de una mascota específica del dueño autenticado. Solo se puede acceder a mascotas propias."
+            summary = "Get pet by id",
+            description = "Returns a specific pet only if it belongs to the authenticated user"
     )
     @ApiResponses({
-        @ApiResponse(
-            responseCode = "200",
-            description = "Mascota encontrada y recuperada exitosamente",
-            content = @Content(schema = @Schema(implementation = PetResponse.class))
-        ),
-        @ApiResponse(
-            responseCode = "401",
-            description = "No autorizado - Token JWT inválido o expirado"
-        ),
-        @ApiResponse(
-            responseCode = "404",
-            description = "Mascota no encontrada o no pertenece al usuario autenticado"
-        )
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Pet retrieved successfully",
+                    content = @Content(schema = @Schema(implementation = PetResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - Invalid or expired JWT token"
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Pet not found or does not belong to the authenticated user"
+            )
     })
     @GetMapping("/{petId}")
     public ResponseEntity<PetResponse> getPetById(
             @Parameter(hidden = true) @RequestHeader("Authorization") String authorization,
-            @Parameter(description = "ID de la mascota", example = "1", required = true) @PathVariable Long petId
+            @Parameter(description = "Pet ID", example = "1", required = true) @PathVariable Long petId
     ) {
         PetResponse response = petService.getPetById(authorization, petId);
         return ResponseEntity.ok(response);

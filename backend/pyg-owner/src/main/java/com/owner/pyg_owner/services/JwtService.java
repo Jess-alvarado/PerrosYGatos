@@ -7,10 +7,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
 import java.nio.charset.StandardCharsets;
 
 @Service
 public class JwtService {
+
     private static final Logger log = LoggerFactory.getLogger(JwtService.class);
 
     @Value("${JWT_SECRET}")
@@ -19,23 +21,23 @@ public class JwtService {
     public boolean isTokenValid(String token) {
         try {
             Jwts.parser()
-                .setSigningKey(secretKey.getBytes(StandardCharsets.UTF_8))
-                .parseClaimsJws(token);
+                    .setSigningKey(secretKey.getBytes(StandardCharsets.UTF_8))
+                    .parseClaimsJws(token);
             return true;
         } catch (SignatureException e) {
-            log.warn("Token con firma inválida", e);
+            log.warn("Token signature is invalid", e);
             return false;
         } catch (Exception e) {
-            log.error("Error verificando token", e);
+            log.error("Error validating token", e);
             return false;
         }
     }
 
     public Claims extractAllClaims(String token) {
         return Jwts.parser()
-            .setSigningKey(secretKey.getBytes(StandardCharsets.UTF_8))
-            .parseClaimsJws(token)
-            .getBody();
+                .setSigningKey(secretKey.getBytes(StandardCharsets.UTF_8))
+                .parseClaimsJws(token)
+                .getBody();
     }
 
     public String getUsername(String token) {
