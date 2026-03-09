@@ -10,21 +10,21 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Respuesta de validación de token desde pyg-auth")
+@Schema(description = "Token validation response from pyg-auth")
 public class TokenValidationResponse {
 
-    @Schema(description = "ID del usuario en pyg-auth", example = "123")
+    @Schema(description = "ID user pyg-auth", example = "123")
     private Long userId;
 
-    @Schema(description = "Nombre de usuario", example = "jess.alvarado")
+    @Schema(description = "user name", example = "jess.alvarado")
     private String username;
 
-    @Schema(description = "Rol del usuario", example = "ROLE_PROFESSIONAL")
+    @Schema(description = "Rol", example = "ROLE_PROFESSIONAL")
     private String role;
 
-    @Schema(description = "Token válido o no", example = "true")
+    @Schema(description = "Valid token or not", example = "true")
     private boolean valid;
 
-    @Schema(description = "Tiempo de expiración en timestamp", example = "1698987654000")
+    @Schema(description = "Expiration time in timestamp", example = "1698987654000")
     private Long expiresAt;
 }
