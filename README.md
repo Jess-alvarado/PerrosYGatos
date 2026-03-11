@@ -1,112 +1,132 @@
 # PerrosYGatos
-
 ![GitHub repo views](https://komarev.com/ghpvc/?username=Jess-alvarado&repo=PerrosYGatos&color=brightgreen&style=flat)
 
-Backend platform designed to connect **pet owners** with **animal behavior professionals** such as trainers, ethologists and pet caregivers.
 
-This project focuses on **microservices architecture, authentication flows, and scalable backend design**.
+Backend platform designed to connect **pet owners** with **animal behavior professionals**, such as trainers and ethologists.
 
----
+The system focuses on building a **scalable and secure backend architecture**, using domain-oriented microservices, centralized authentication, and service-to-service communication.
 
-# Engineering Highlights
+It provides the foundation for managing users, pets, and professional services within the platform.
 
-- **Centralized JWT validation** through `pyg-auth`, isolating authentication logic from business services.
-- **Ownership-based authorization** in protected endpoints to prevent unauthorized resource access (IDOR protection).
-- **Domain-driven microservice separation**, where each service owns its business logic and persistence layer.
-- **Docker-based local environment** using Docker Compose for multi-service development.
-- **Architecture designed to scale** with future services such as scheduling, notifications and search.
+----------
 
----
+## Engineering Highlights
 
-# Architecture
-
-Microservices based system where each service owns its domain and database.
-
-Client
-│
-▼
-API Gateway (planned)
-│
-├── pyg-auth
-├── pyg-owner
-└── pyg-professional
+-   **Centralized JWT validation** handled by `pyg-auth`, isolating authentication logic from business services.
 
 
-Services communicate using **REST APIs**.
+-   **Ownership-based authorization** to ensure users can only access their own resources.
 
-Future services will extend the architecture without modifying existing domains.
 
----
+-   **Domain-driven service separation**, where each service owns its business logic and persistence layer.
 
-# Tech Stack
 
-## Backend
+-   **Docker-based local development environment** using Docker Compose.
 
-- Java 17
-- Spring Boot
-- Spring Security
-- JWT Authentication
-- Spring Data JPA
-- PostgreSQL
-- Maven
 
-## Infrastructure
+-   **Architecture designed to scale** with future services such as scheduling, notifications, and search.
+    
 
-- Docker
-- Docker Compose
+----------
 
-## Planned Services
+## Architecture
 
-- NestJS
-- WebSocket notifications
-- Elasticsearch search
+Microservices-based backend where each service is responsible for a specific domain.
 
-## Frontend (planned)
+Client  
+│  
+▼  
+Backend Services  
+├── `pyg-auth`  
+├── `pyg-owner`  
+└── `pyg-professional`
 
-- React
-- TypeScript
+Services communicate using **REST APIs**, and each service manages its own domain logic and database.
 
----
+----------
 
-# Services
+## Tech Stack
+
+### Backend
+
+-   Java 17
+    
+-   Spring Boot
+    
+-   Spring Security
+    
+-   JWT Authentication
+    
+-   Spring Data JPA
+    
+-   PostgreSQL
+    
+-   Maven
+    
+
+### Infrastructure
+
+-   Docker
+    
+-   Docker Compose
+    
+
+----------
+
+## Services
 
 | Service | Description |
-|------|------|
-| pyg-auth | Authentication and JWT validation |
-| pyg-owner | Pet owners and pets management |
-| pyg-professional | Professional profiles |
-| pyg-session | Session scheduling (planned) |
-| pyg-notification | Real-time notifications (planned) |
-| pyg-content | Educational content (planned) |
-| pyg-search | Professional discovery (planned) |
-| pyg-bff | Backend-for-Frontend gateway (planned) |
+|---|---|
+| `pyg-auth` | Authentication and JWT validation |
+| `pyg-owner` | Pet owners and pets management |
+| `pyg-professional` | Professional profiles |
 
----
-
-Running Locally
+## Running Locally
 
 Start the platform with Docker:
+````
 docker-compose up -d
+````
+----------
 
-Swagger documentation
+## Swagger Documentation
 
-pyg-auth: http://localhost:8081/swagger-ui.html
-pyg-owner: http://localhost:8082/swagger-ui.html
-pyg-professional: http://localhost:8083/swagger-ui.html
+pyg-auth
+[http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html)
 
-Project Purpose
+pyg-owner
+[http://localhost:8082/swagger-ui.html](http://localhost:8082/swagger-ui.html)
 
-This project was created as a backend portfolio project to demonstrate:
+pyg-professional
+[http://localhost:8083/swagger-ui.html](http://localhost:8083/swagger-ui.html)
 
-microservices architecture
+----------
 
-secure authentication with JWT
 
-service-to-service communication
+## Project Purpose
 
-scalable backend design
+This project is being developed as a backend platform focused on **scalable architecture, secure authentication, and service-oriented backend design**.
 
-containerized development environments
+It explores practical backend engineering concepts such as:
 
-Author
+-   microservices architecture
+   
+-   centralized authentication with JWT
+   
+-   service-to-service communication
+   
+-   secure resource access and authorization
+   
+-   containerized development environments
+    
+
+The goal is to build a clean and extensible backend foundation that can support future platform features and additional services.
+    
+
+----------
+
+## Author
+
 Jessica Alvarado
+
+----------
