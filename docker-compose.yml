@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-perrosygatos}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -35,6 +35,7 @@ services:
       - SPRING_JPA_OPEN_IN_VIEW=${SPRING_JPA_OPEN_IN_VIEW}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION}
       - SERVER_PORT=${SERVER_PORT_AUTH}
       - LOG_LEVEL=${LOG_LEVEL}
       - APP_LOG_LEVEL=${APP_LOG_LEVEL}
@@ -74,6 +75,7 @@ services:
       - FEIGN_READ_TIMEOUT=${FEIGN_READ_TIMEOUT}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION}
     ports:
       - "${SERVER_PORT_OWNER}:${SERVER_PORT_OWNER}"
     depends_on:
@@ -103,6 +105,9 @@ services:
       - SPRING_LOG_LEVEL=${SPRING_LOG_LEVEL}
       - HIBERNATE_SQL_LOG_LEVEL=${HIBERNATE_SQL_LOG_LEVEL}
       - HIBERNATE_BINDER_LOG_LEVEL=${HIBERNATE_BINDER_LOG_LEVEL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION}
     ports:
       - "${SERVER_PORT_PROFESSIONAL}:${SERVER_PORT_PROFESSIONAL}"
     depends_on:
