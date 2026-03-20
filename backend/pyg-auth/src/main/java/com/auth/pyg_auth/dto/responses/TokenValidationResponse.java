@@ -10,21 +10,21 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Respuesta de validación de token")
+@Schema(description = "Token validation response")
 public class TokenValidationResponse {
 
-    @Schema(description = "ID del usuario", example = "123")
+    @Schema(description = "User ID", example = "123")
     private Long userId;
 
-    @Schema(description = "Nombre de usuario", example = "jess.alvarado")
+    @Schema(description = "Username", example = "jess.alvarado")
     private String username;
 
-    @Schema(description = "Rol del usuario", example = "ROLE_OWNER")
+    @Schema(description = "User role", example = "ROLE_OWNER")
     private String role;
 
-    @Schema(description = "Token válido o no", example = "true")
+    @Schema(description = "Whether the token is valid", example = "true")
     private boolean valid;
 
-    @Schema(description = "Tiempo de expiración en timestamp", example = "1698987654000")
+    @Schema(description = "Expiration timestamp", example = "1698987654000")
     private Long expiresAt;
 }

@@ -1,5 +1,4 @@
 # PerrosYGatos
-![GitHub repo views](https://komarev.com/ghpvc/?username=Jess-alvarado&repo=PerrosYGatos&color=brightgreen&style=flat)
 
 
 Backend platform designed to connect **pet owners** with **animal behavior professionals**, such as trainers and ethologists.

@@ -38,6 +38,8 @@ server:
 jwt:
   secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION}
+  refresh-token: ${JWT_REFRESH_EXPIRATION}
+
 
 logging:
   level:
