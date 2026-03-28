@@ -1,0 +1,166 @@
+### =============================================================================
+### PERROS & GATOS - API TESTS
+### Environment: {{dev}} - Select environment in IntelliJ
+### =============================================================================
+
+### =============================================================================
+### 1. AUTHENTICATION - pyg-auth
+### =============================================================================
+
+### Register new user
+POST {{auth_host}}/{{api_version}}/auth/register
+Content-Type: {{content_type}}
+
+{
+  "username": "test.user@example.com",
+  "password": "Password123!",
+  "firstName": "Test",
+  "lastName": "User",
+  "role": "OWNER"
+}
+
+> {%
+    // Save token automatically after successful response
+    if (response.status === 200) {
+        const responseBody = JSON.parse(response.body);
+
+        // Get tokens from response
+        const accessToken = responseBody.accessToken;
+        const refreshToken = responseBody.refreshToken;
+
+        // Save in global variables for other requests
+        client.global.set("auth_token", accessToken);
+        client.global.set("refresh_token", refreshToken);
+
+        // Show success message
+        client.log("✅ Success - Token saved");
+        client.log("🔑 Token: " + accessToken.substring(0, 20) + "...");
+    }
+%}
+
+### Login (get tokens)
+POST {{auth_host}}/{{api_version}}/auth/login
+Content-Type: {{content_type}}
+
+{
+  "username": "test.user@example.com",
+  "password": "Password123!"
+}
+
+> {%
+    // Same token saving script - reuse everywhere
+    if (response.status === 200) {
+        const responseBody = JSON.parse(response.body);
+        const accessToken = responseBody.accessToken;
+        const refreshToken = responseBody.refreshToken;
+
+        client.global.set("auth_token", accessToken);
+        client.global.set("refresh_token", refreshToken);
+
+        client.log("✅ Login successful");
+        client.log("👤 User: " + responseBody.username);
+    }
+%}
+
+### Validate current token
+POST {{auth_host}}/{{api_version}}/auth/validate
+Authorization: Bearer {{auth_token}}
+
+### Refresh token
+POST {{auth_host}}/{{api_version}}/auth/refresh
+Content-Type: {{content_type}}
+
+{
+  "refreshToken": "{{refresh_token}}"
+}
+
+> {%
+    // Update tokens after refresh
+    if (response.status === 200) {
+        const responseBody = JSON.parse(response.body);
+        client.global.set("auth_token", responseBody.accessToken);
+        client.global.set("refresh_token", responseBody.refreshToken);
+        client.log("🔄 Tokens refreshed");
+    }
+%}
+
+### Logout
+POST {{auth_host}}/{{api_version}}/auth/logout
+Authorization: Bearer {{auth_token}}
+
+> {%
+    // Clear variables after logout
+    client.global.clear("auth_token");
+    client.global.clear("refresh_token");
+    client.log("👋 Logged out - Tokens deleted");
+%}
+
+### =============================================================================
+### 2. OWNER SERVICE - pyg-owner
+### =============================================================================
+
+### Create/Update Owner profile
+POST {{owner_host}}/owners
+Content-Type: {{content_type}}
+Authorization: Bearer {{auth_token}}
+
+{
+  "phone": "+1234567890",
+  "address": "123 Main St, City, State 12345",
+  "profilePicture": "https://example.com/profile.jpg"
+}
+
+### Get my Owner profile
+GET {{owner_host}}/owners/profile
+Authorization: Bearer {{auth_token}}
+
+### =============================================================================
+### 3. PROFESSIONAL SERVICE - pyg-professional
+### =============================================================================
+
+### Create Professional profile
+POST {{professional_host}}/professionals
+Content-Type: {{content_type}}
+Authorization: Bearer {{auth_token}}
+
+{
+  "specialization": "Veterinarian",
+  "licenseNumber": "VET-12345",
+  "experience": 5,
+  "phone": "+1234567890",
+  "address": "456 Professional Ave, City, State 12345",
+  "profilePicture": "https://example.com/professional.jpg"
+}
+
+### Get my Professional profile
+GET {{professional_host}}/professionals/profile
+Authorization: Bearer {{auth_token}}
+
+### Update my Professional profile (PATCH)
+PATCH {{professional_host}}/professionals/profile
+Content-Type: {{content_type}}
+Authorization: Bearer {{auth_token}}
+
+{
+  "experience": 6,
+  "address": "789 Updated Address, City, State 12345"
+}
+
+### List all professionals
+GET {{professional_host}}/professionals
+Authorization: Bearer {{auth_token}}
+
+### Get professional by ID
+GET {{professional_host}}/professionals/1
+Authorization: Bearer {{auth_token}}
+
+### =============================================================================
+### 4. ERROR TESTS - Check security
+### =============================================================================
+
+### Try access without token (should give 401)
+GET {{owner_host}}/owners/profile
+
+### Try access with bad token (should give 401)
+GET {{owner_host}}/owners/profile
+Authorization: Bearer bad_token_123
