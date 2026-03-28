@@ -1,4 +1,4 @@
-### =============================================================================
+###
 ### PERROS & GATOS - API TESTS
 ### Environment: {{dev}} - Select environment in IntelliJ
 ### =============================================================================
@@ -16,7 +16,7 @@ Content-Type: {{content_type}}
   "password": "Password123!",
   "firstName": "Test",
   "lastName": "User",
-  "role": "OWNER"
+  "role": "ROLE_PROFESSIONAL"
 }
 
 > {%
@@ -95,7 +95,7 @@ Authorization: Bearer {{auth_token}}
     client.log("👋 Logged out - Tokens deleted");
 %}
 
-### =============================================================================
+###
 ### 2. OWNER SERVICE - pyg-owner
 ### =============================================================================
 
@@ -114,7 +114,7 @@ Authorization: Bearer {{auth_token}}
 GET {{owner_host}}/owners/profile
 Authorization: Bearer {{auth_token}}
 
-### =============================================================================
+###
 ### 3. PROFESSIONAL SERVICE - pyg-professional
 ### =============================================================================
 
@@ -154,7 +154,7 @@ Authorization: Bearer {{auth_token}}
 GET {{professional_host}}/professionals/1
 Authorization: Bearer {{auth_token}}
 
-### =============================================================================
+###
 ### 4. ERROR TESTS - Check security
 ### =============================================================================
 
