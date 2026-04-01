@@ -1,4 +1,3 @@
-###
 ### PERROS & GATOS - API TESTS
 ### Environment: {{dev}} - Select environment in IntelliJ
 ### =============================================================================
@@ -12,29 +11,29 @@ POST {{auth_host}}/{{api_version}}/auth/register
 Content-Type: {{content_type}}
 
 {
-  "username": "test.user@example.com",
+  "username": "usernameee{{session_id}}@example.cl",
   "password": "Password123!",
-  "firstName": "Test",
-  "lastName": "User",
-  "role": "ROLE_PROFESSIONAL"
+  "firstname": "jasmine",
+  "lastname": "cabello",
+  "rolename": "ROLE_OWNER"
 }
 
 > {%
-    // Save token automatically after successful response
-    if (response.status === 200) {
-        const responseBody = JSON.parse(response.body);
+    const timestamp = new Date().getTime();
+    client.global.set("session_id", timestamp);
 
-        // Get tokens from response
-        const accessToken = responseBody.accessToken;
-        const refreshToken = responseBody.refreshToken;
+    client.test("User registered successfully", function() {
+        client.assert(response.status === 200 || response.status === 201, "Registration failed");
+    });
 
-        // Save in global variables for other requests
-        client.global.set("auth_token", accessToken);
-        client.global.set("refresh_token", refreshToken);
-
-        // Show success message
-        client.log("✅ Success - Token saved");
-        client.log("🔑 Token: " + accessToken.substring(0, 20) + "...");
+    if (response.status === 200 || response.status === 201) {
+        const body = JSON.parse(response.body);
+        const sentData = JSON.parse(request.body);
+        const emailUsed = sentData.username;
+        client.global.set("last_registered_email", emailUsed);
+        client.global.set("auth_token", body.accessToken);
+        client.global.set("refresh_token", body.refreshToken);
+        client.log("✅ Success - Tokens saved");
     }
 %}
 
@@ -43,28 +42,32 @@ POST {{auth_host}}/{{api_version}}/auth/login
 Content-Type: {{content_type}}
 
 {
-  "username": "test.user@example.com",
+  "username": "{{last_registered_email}}",
   "password": "Password123!"
 }
 
 > {%
-    // Same token saving script - reuse everywhere
+    client.test("Login successful", function() {
+        client.assert(response.status === 200, "Login failed for user: " + client.global.get("last_registered_email"));
+    });
+
     if (response.status === 200) {
-        const responseBody = JSON.parse(response.body);
-        const accessToken = responseBody.accessToken;
-        const refreshToken = responseBody.refreshToken;
-
-        client.global.set("auth_token", accessToken);
-        client.global.set("refresh_token", refreshToken);
-
-        client.log("✅ Login successful");
-        client.log("👤 User: " + responseBody.username);
+        const body = JSON.parse(response.body);
+        client.global.set("auth_token", body.accessToken);
+        client.global.set("refresh_token", body.refreshToken);
+        client.log("✅ Tokens updated for user: " + body.username);
     }
 %}
 
 ### Validate current token
 POST {{auth_host}}/{{api_version}}/auth/validate
 Authorization: Bearer {{auth_token}}
+
+> {%
+    client.test("Token is valid", function() {
+        client.assert(response.status === 200, "Invalid token");
+    });
+%}
 
 ### Refresh token
 POST {{auth_host}}/{{api_version}}/auth/refresh
@@ -75,12 +78,15 @@ Content-Type: {{content_type}}
 }
 
 > {%
-    // Update tokens after refresh
+    client.test("Tokens refreshed successfully", function() {
+        client.assert(response.status === 200, "Refresh failed");
+    });
+
     if (response.status === 200) {
-        const responseBody = JSON.parse(response.body);
-        client.global.set("auth_token", responseBody.accessToken);
-        client.global.set("refresh_token", responseBody.refreshToken);
-        client.log("🔄 Tokens refreshed");
+        const body = JSON.parse(response.body);
+        client.global.set("auth_token", body.accessToken);
+        client.global.set("refresh_token", body.refreshToken);
+        client.log("🔄 Tokens rotated successfully");
     }
 %}
 
@@ -89,10 +95,12 @@ POST {{auth_host}}/{{api_version}}/auth/logout
 Authorization: Bearer {{auth_token}}
 
 > {%
-    // Clear variables after logout
+    client.test("Logout successful", function() {
+        client.assert(response.status === 200, "Logout failed");
+    });
     client.global.clear("auth_token");
     client.global.clear("refresh_token");
-    client.log("👋 Logged out - Tokens deleted");
+    client.log("👋 Session cleared");
 %}
 
 ###
@@ -107,12 +115,62 @@ Authorization: Bearer {{auth_token}}
 {
   "phone": "+1234567890",
   "address": "123 Main St, City, State 12345",
-  "profilePicture": "https://example.com/profile.jpg"
+  "birthDate": "1998-09-18"
 }
+
+> {%
+    client.test("Owner profile created/updated", function() {
+        client.assert(response.status === 200 || response.status === 201, "Profile action failed");
+    });
+    client.log("📦 Response: " + response.body);
+%}
 
 ### Get my Owner profile
 GET {{owner_host}}/owners/profile
 Authorization: Bearer {{auth_token}}
+
+> {%
+    client.test("Owner profile retrieved", function() {
+        client.assert(response.status === 200, "Could not fetch owner profile");
+    });
+%}
+
+### Create/Update Pets profile
+POST {{owner_host}}/pets
+Content-Type: {{content_type}}
+Authorization: Bearer {{auth_token}}
+
+{
+    "name": "Batman",
+    "type": "CAT",
+    "breed": "Tuxedo",
+    "age": 8,
+    "sterilized": true,
+    "sex": "male",
+    "behaviorDescription": "Well behaved but curious."
+}
+
+> {%
+    client.test("Pet profile created", function() {
+        client.assert(response.status === 200 || response.status === 201, "Pet creation failed");
+    });
+
+    if (response.status === 200 || response.status === 201) {
+        const body = JSON.parse(response.body);
+        client.global.set("current_pet_id", body.id);
+        client.log("🐾 Pet ID saved: " + body.id);
+    }
+%}
+
+### Get my pets
+GET {{owner_host}}/pets/{{current_pet_id}}
+Authorization: Bearer {{auth_token}}
+
+> {%
+    client.test("Pet details retrieved", function() {
+        client.assert(response.status === 200, "Could not fetch pet details");
+    });
+%}
 
 ###
 ### 3. PROFESSIONAL SERVICE - pyg-professional
@@ -124,43 +182,98 @@ Content-Type: {{content_type}}
 Authorization: Bearer {{auth_token}}
 
 {
-  "specialization": "Veterinarian",
-  "licenseNumber": "VET-12345",
-  "experience": 5,
-  "phone": "+1234567890",
-  "address": "456 Professional Ave, City, State 12345",
-  "profilePicture": "https://example.com/professional.jpg"
+    "phone": "+5691234578",
+    "address": "Linares, Chile",
+    "birthDate": "1998-05-10",
+    "profession": "Feline Ethologist",
+    "bio": "Expert in feline behavior and environmental enrichment.",
+    "experienceYears": 4,
+    "petTypes": "CAT",
+    "profilePictureUrl": "https://mysite.cl/photo.jpg",
+    "instagram": "jess_ethologist",
+    "website": "https://mysite.cl",
+    "availability": "Mon-Fri 10:00-18:00"
 }
+
+> {%
+    client.test("Professional profile created", function() {
+        client.assert(response.status === 200 || response.status === 201, "Professional creation failed");
+    });
+
+    if (response.status === 200 || response.status === 201) {
+        const body = JSON.parse(response.body);
+        client.global.set("current_professional_id", body.id);
+        client.log("🩺 Professional ID saved: " + body.id);
+    }
+%}
 
 ### Get my Professional profile
 GET {{professional_host}}/professionals/profile
 Authorization: Bearer {{auth_token}}
 
-### Update my Professional profile (PATCH)
+> {%
+    client.test("Professional profile retrieved", function() {
+        client.assert(response.status === 200, "Could not fetch pro profile");
+    });
+%}
+
+### Update my Professional profile
 PATCH {{professional_host}}/professionals/profile
 Content-Type: {{content_type}}
 Authorization: Bearer {{auth_token}}
 
 {
-  "experience": 6,
-  "address": "789 Updated Address, City, State 12345"
+    "bio": "Updated bio: Working with feline behavior and home adaptation.",
+    "availability": "Mon-Sat 09:00-18:00"
 }
+
+> {%
+    client.test("Professional profile patched", function() {
+        client.assert(response.status === 200, "Patch update failed");
+    });
+%}
 
 ### List all professionals
 GET {{professional_host}}/professionals
 Authorization: Bearer {{auth_token}}
 
+> {%
+    client.test("Professionals list retrieved", function() {
+        client.assert(response.status === 200, "Could not fetch pro list");
+    });
+%}
+
 ### Get professional by ID
-GET {{professional_host}}/professionals/1
+GET {{professional_host}}/professionals/{{current_professional_id}}
 Authorization: Bearer {{auth_token}}
 
+> {%
+    client.test("Professional details by ID retrieved", function() {
+        client.assert(response.status === 200, "Could not fetch pro by ID");
+    });
+%}
+
 ###
-### 4. ERROR TESTS - Check security
+### 4. ERROR TESTS - Security Check
 ### =============================================================================
 
 ### Try access without token (should give 401)
 GET {{owner_host}}/owners/profile
 
+> {%
+    client.test("Access denied without token", function() {
+        client.assert(response.status === 401, "Security flaw: Access granted without token");
+    });
+    client.log("🛡️ Security check passed: 401 Unauthorized");
+%}
+
 ### Try access with bad token (should give 401)
 GET {{owner_host}}/owners/profile
 Authorization: Bearer bad_token_123
+
+> {%
+    client.test("Access denied with invalid token", function() {
+        client.assert(response.status === 401, "Security flaw: Access granted with bad token");
+    });
+    client.log("🛡️ Security check passed: 401 Invalid Token");
+%}
