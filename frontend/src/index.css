@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@theme {
+  /* 1. Registro de colores oficiales (como constantes reutilizables) */
+  --color-soft-black: #1E1E1E;
+  --color-charcoal: #2A2A2A;
+  --color-light-grey: #E5E7EB;
+  --color-sage: #7C9A92;
+  --color-forest: #4F6F52;
+  --color-terracotta: #D97757;
+  --color-peach: #F2B8A0;
+
+  /* Agregamos una sombra personalizada suave como en tus imágenes */
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+}
+
+:root {
+  /* 2. MODO CLARO */
+  --bg-main: #E5E7EB;           /* Fondo Principal: Light Grey */
+  --bg-surface: #FFFFFF;
+
+  --text-main: #1E1E1E;         /* Texto Principal: Soft Black */
+  --text-muted: #6B7280;        /* Texto secundario (Gris estándar) */
+
+  --border-color: rgba(107, 140, 163, 1); /* Bordes suaves para claro */
+
+  --accent: #4F6F52;             /* Acento/Iconos: Forest Green */
+
+  /* Sombra más sutil para modo claro */
+  --card-shadow: var(--shadow-xl);
+}
+
+.dark {
+  /* 3. MODO OSCURO (Basado fielmente en tus imágenes) */
+  --bg-main: #1E1E1E;           /* Fondo Principal: Soft Black */
+  --bg-surface: #2A2A2A;        /* Tarjetas/Nav: Charcoal */
+
+  --text-main: #E5E7EB;         /* Texto Principal: Light Grey */
+  --text-muted: #9CA3AF;        /* Texto secundario más claro */
+
+  --border-color: rgba(107, 140, 163, 1); /* Bordes sutiles para oscuro */
+
+  --accent: #7C9A92;             /* Acento/Iconos: Sage Green */
+
+  /* Sombra más pronunciada para modo oscuro */
+  --card-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* 4. Aplicación global de estilos base */
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  /* Fuente moderna por defecto */
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Utilitario para bordes extra redondeados (Regla de Oro de Fotos) */
+.rounded-card {
+  border-radius: 2rem;
+}
+
+@layer components {
+  .btn-primary {
+    @apply flex items-center justify-center gap-2 px-8 py-4 bg-[var(--color-terracotta)]
+          text-[#1E1E1E] font-black rounded-2xl shadow-lg shadow-peach/20
+          transition-all duration-300 transform
+          hover:bg-[var(--color-forest)] hover:text-white hover:-translate-y-1
+          active:scale-95 cursor-pointer;
+  }
+}
