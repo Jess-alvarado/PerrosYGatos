@@ -116,5 +116,32 @@ services:
       pyg-auth:
         condition: service_started
 
+  pyg-gateway:
+    build:
+      context: ./backend/pyg-gateway
+    container_name: pyg-gateway
+    environment:
+      - SERVER_PORT=${SERVER_PORT_GATEWAY}
+      - AUTH_SERVICE_URL=http://pyg-auth:${SERVER_PORT_AUTH}
+      - OWNER_SERVICE_URL=http://pyg-owner:${SERVER_PORT_OWNER}
+      - PROFESSIONAL_SERVICE_URL=http://pyg-professional:${SERVER_PORT_PROFESSIONAL}
+    ports:
+      - "${SERVER_PORT_GATEWAY}:${SERVER_PORT_GATEWAY}"
+    depends_on:
+      - pyg-auth
+      - pyg-owner
+      - pyg-professional
+
+  pyg-frontend:
+    build:
+      context: ./frontend
+    container_name: pyg-frontend
+    environment:
+      - VITE_API_URL=http://localhost:${SERVER_PORT_GATEWAY}
+    ports:
+      - "5173:5173"
+    depends_on:
+      - pyg-gateway
+
 volumes:
   pgdata:

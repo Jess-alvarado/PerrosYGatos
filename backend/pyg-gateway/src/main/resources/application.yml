@@ -1,0 +1,52 @@
+server:
+  port: 9090
+
+spring:
+  cloud:
+    gateway:
+      globalcors:
+        add-to-simple-url-handler-mapping: true
+        cors-configurations:
+          "[/**]":
+            allowedOrigins: "http://localhost:5173"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+
+      default-filters:
+        - name: DedupeResponseHeader
+          args:
+            strategy: RETAIN_FIRST
+            name: Access-Control-Allow-Origin Access-Control-Allow-Credentials
+
+      routes:
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/auth/**
+
+        - id: owners-service
+          uri: ${OWNER_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/owners/**
+          filters:
+            - StripPrefix=1
+
+        - id: pets-service
+          uri: ${OWNER_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/pets/**
+          filters:
+            - StripPrefix=1
+
+        - id: professionals-service
+          uri: ${PROFESSIONAL_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/professionals/**
+          filters:
+            - StripPrefix=1

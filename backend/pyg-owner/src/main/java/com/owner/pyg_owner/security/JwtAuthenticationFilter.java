@@ -1,6 +1,7 @@
 package com.owner.pyg_owner.security;
 
 import com.owner.pyg_owner.clients.AuthServiceClient;
+import feign.FeignException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,10 +30,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final AuthServiceClient authServiceClient;
 
     @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+
         String path = request.getServletPath();
+
         return path.startsWith("/swagger-ui/")
-                || path.startsWith("/v3/api-docs/")
+                || path.startsWith("/v3/api-docs")
                 || path.startsWith("/swagger-resources/")
                 || path.startsWith("/actuator/");
     }
@@ -41,55 +44,97 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
-            @NonNull FilterChain filterChain
-    ) throws ServletException, IOException {
+            @NonNull FilterChain filterChain)
+            throws ServletException, IOException {
 
-        final String incomingAuthHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        if (!StringUtils.hasText(incomingAuthHeader)) {
+        if (!StringUtils.hasText(authHeader)) {
+
+            log.warn("Missing Authorization header");
+
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Authorization header is missing");
+            response.getWriter().write("Authorization header missing");
+
             return;
         }
 
-        try {
-            String normalizedHeader = incomingAuthHeader.trim();
+        String normalizedHeader = authHeader.trim();
 
-            if (!normalizedHeader.regionMatches(true, 0, "Bearer ", 0, 7)) {
-                normalizedHeader = "Bearer " + normalizedHeader;
-            }
+        if (!normalizedHeader.regionMatches(true, 0,
+                "Bearer ", 0, 7)) {
+
+            normalizedHeader = "Bearer " + normalizedHeader;
+        }
+
+        try {
 
             var validation = authServiceClient.validateToken(normalizedHeader);
 
             if (validation == null || !validation.isValid()) {
-                log.warn("JWT validation failed");
-                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+
+                log.warn("Invalid or expired token");
+
+                SecurityContextHolder.clearContext();
+
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("Invalid or expired token");
+
                 return;
             }
 
-            log.debug("JWT validated successfully for user {}", validation.getUsername());
+            var authorities = List.of(
+                    new SimpleGrantedAuthority(validation.getRole()));
 
-            var authorities = List.of(new SimpleGrantedAuthority(validation.getRole()));
-
-            var authenticationToken = new UsernamePasswordAuthenticationToken(
+            var authentication = new UsernamePasswordAuthenticationToken(
                     validation.getUsername(),
                     null,
-                    authorities
-            );
+                    authorities);
 
-            authenticationToken.setDetails(validation);
-            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+            authentication.setDetails(validation);
 
-            request.setAttribute("auth.userId", validation.getUserId());
-            request.setAttribute("auth.username", validation.getUsername());
-            request.setAttribute("auth.role", validation.getRole());
+            SecurityContextHolder.getContext()
+                    .setAuthentication(authentication);
+
+            request.setAttribute("auth.userId",
+                    validation.getUserId());
+
+            request.setAttribute("auth.username",
+                    validation.getUsername());
+
+            request.setAttribute("auth.role",
+                    validation.getRole());
 
             filterChain.doFilter(request, response);
-        } catch (Exception ex) {
-            log.error("JWT validation error: {}", ex.getMessage(), ex);
+
+        } catch (FeignException.Unauthorized ex) {
+
+            log.error("Unauthorized token", ex);
+
+            SecurityContextHolder.clearContext();
+
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Invalid or expired token");
+
+        } catch (FeignException.ServiceUnavailable ex) {
+
+            log.error("Auth service unavailable", ex);
+
+            SecurityContextHolder.clearContext();
+
+            response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+            response.getWriter()
+                    .write("Authentication service unavailable");
+
+        } catch (FeignException ex) {
+
+            log.error("Feign auth error", ex);
+
+            SecurityContextHolder.clearContext();
+
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            response.getWriter().write("Authentication service unavailable or token is invalid");
+            response.getWriter()
+                    .write("Authentication error");
         }
     }
 }

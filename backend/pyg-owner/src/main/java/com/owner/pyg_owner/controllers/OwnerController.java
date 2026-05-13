@@ -23,58 +23,30 @@ import org.springframework.web.bind.annotation.*;
 @SecurityRequirement(name = "bearerAuth")
 public class OwnerController {
 
-    private final OwnerService ownerService;
+        private final OwnerService ownerService;
 
-    @Operation(
-            summary = "Create or update owner profile",
-            description = "Creates a new owner profile or updates the existing one based on the authenticated user"
-    )
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Owner profile created or updated successfully",
-                    content = @Content(schema = @Schema(implementation = OwnerResponse.class))
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid request data"
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Unauthorized - Invalid or expired JWT token"
-            )
-    })
-    @PostMapping
-    public ResponseEntity<OwnerResponse> upsertProfile(
-            @Parameter(hidden = true) @RequestHeader("Authorization") String authorization,
-            @Valid @RequestBody OwnerCreateRequest request
-    ) {
-        return ResponseEntity.ok(ownerService.createOrUpdateProfile(authorization, request));
-    }
+        @Operation(summary = "Create or update owner profile", description = "Creates a new owner profile or updates the existing one based on the authenticated user")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Owner profile created or updated successfully", content = @Content(schema = @Schema(implementation = OwnerResponse.class))),
+                        @ApiResponse(responseCode = "400", description = "Invalid request data"),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or expired JWT token")
+        })
+        @PostMapping("/profile")
+        public ResponseEntity<OwnerResponse> upsertProfile(
+                        @Parameter(hidden = true) @RequestHeader("Authorization") String authorization,
+                        @Valid @RequestBody OwnerCreateRequest request) {
+                return ResponseEntity.ok(ownerService.createOrUpdateProfile(authorization, request));
+        }
 
-    @Operation(
-            summary = "Get current owner profile",
-            description = "Returns the owner profile associated with the authenticated user"
-    )
-    @ApiResponses({
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Owner profile retrieved successfully",
-                    content = @Content(schema = @Schema(implementation = OwnerResponse.class))
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Unauthorized - Invalid or expired JWT token"
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Owner profile not found"
-            )
-    })
-    @GetMapping("/profile")
-    public ResponseEntity<OwnerResponse> getMyProfile(
-            @Parameter(hidden = true) @RequestHeader("Authorization") String authorization
-    ) {
-        return ResponseEntity.ok(ownerService.getMyProfile(authorization));
-    }
+        @Operation(summary = "Get current owner profile", description = "Returns the owner profile associated with the authenticated user")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Owner profile retrieved successfully", content = @Content(schema = @Schema(implementation = OwnerResponse.class))),
+                        @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or expired JWT token"),
+                        @ApiResponse(responseCode = "404", description = "Owner profile not found")
+        })
+        @GetMapping("/profile")
+        public ResponseEntity<OwnerResponse> getMyProfile(
+                        @Parameter(hidden = true) @RequestHeader("Authorization") String authorization) {
+                return ResponseEntity.ok(ownerService.getMyProfile(authorization));
+        }
 }

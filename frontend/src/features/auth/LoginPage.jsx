@@ -1,88 +1,136 @@
-import { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, PawPrint } from 'lucide-react';
+import api from "../../api/api";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Mail, Lock, PawPrint } from "lucide-react";
+import { jwtDecode } from "jwt-decode";
 
-const LoginPage = () => {
-  const [showPassword, setShowPassword] = useState(false);
+const LoginPage = ({ onFinishAuth }) => {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const response = await api.post("/api/auth/login", {
+        username: username,
+        password: password,
+      });
+
+      const { accessToken, refreshToken } = response.data;
+
+      if (accessToken) {
+        localStorage.setItem("token", accessToken);
+        localStorage.setItem("refreshToken", refreshToken);
+
+        try {
+          const decoded = jwtDecode(accessToken);
+          console.log("Token decodificado:", decoded);
+
+          const userObj = {
+            firstname: decoded.firstname,
+            lastname: decoded.lastname,
+            email: decoded.sub,
+            id: decoded.uid,
+          };
+
+          localStorage.setItem("user", JSON.stringify(userObj));
+
+          const userRole = decoded.role || "ROLE_OWNER";
+
+          if (onFinishAuth) {
+            onFinishAuth(userRole);
+          }
+
+          console.log("Login exitoso, redirigiendo a perfil...");
+          navigate("/profile");
+        } catch (decodeError) {
+          console.error("Error al decodificar el token:", decodeError);
+          if (onFinishAuth) onFinishAuth("ROLE_OWNER");
+          navigate("/profile");
+        }
+      }
+    } catch (error) {
+      console.error("Error en login:", error);
+      const errorMsg =
+        error.response?.data?.message ||
+        "Credenciales inválidas o error de servidor.";
+      alert(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--bg-main)] p-4">
-      {/* Tarjeta principal con bordes extra redondeados como en tus fotos */}
-      <div className="w-full max-w-md bg-[var(--bg-surface)] rounded-[2rem] shadow-xl p-8 border border-[var(--border-color)] transition-colors duration-300">
-
-        {/* Logo / Encabezado */}
+      <div className="w-full max-w-md bg-[var(--bg-surface)] rounded-card shadow-[var(--card-shadow)] p-10 border border-[var(--border-color)]">
         <div className="flex flex-col items-center mb-8">
-          <div className="bg-[var(--color-terracotta)] p-3 rounded-2xl mb-4 shadow-lg shadow-terracotta/20">
-            <PawPrint className="text-white w-8 h-8" />
+          <div className="bg-[var(--color-terracotta)] p-3 rounded-2xl mb-4 shadow-lg">
+            <PawPrint className="text-white w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-bold text-[var(--text-main)]">Bienvenido de nuevo</h1>
-          <p className="text-[var(--text-muted)] text-sm mt-2">Ingresa a Perros&Gatos</p>
+          <h1 className="text-2xl font-bold text-[var(--text-main)]">
+            Bienvenido de nuevo
+          </h1>
+          <p className="text-[var(--text-muted)] text-sm mt-1">
+            Ingresa tus datos para continuar
+          </p>
         </div>
 
-        <form className="space-y-6">
-          {/* Email */}
+        <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-[var(--text-main)] mb-2 ml-1">
-              Correo Electrónico
+            <label className="block text-sm font-semibold mb-2 ml-1">
+              Usuario / Email
             </label>
             <div className="relative">
-              <Mail className="absolute left-4 top-3.5 w-5 h-5 text-[var(--color-sage)]" />
+              <Mail className="absolute left-4 top-3.5 w-5 h-5 text-[var(--accent)]" />
               <input
                 type="email"
-                placeholder="tu@email.com"
-                className="w-full bg-[var(--bg-main)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-[var(--color-terracotta)] focus:outline-none transition-all"
+                required
+                placeholder="test-1@gg.com"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full bg-[var(--bg-main)] text-[var(--text-main)] border border-[var(--border-color)] rounded-2xl py-3.5 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-[var(--color-terracotta)]"
               />
             </div>
           </div>
 
-          {/* Password */}
           <div>
-            <label className="block text-sm font-medium text-[var(--text-main)] mb-2 ml-1">
+            <label className="block text-sm font-semibold mb-2 ml-1">
               Contraseña
             </label>
             <div className="relative">
-              <Lock className="absolute left-4 top-3.5 w-5 h-5 text-[var(--color-sage)]" />
+              <Lock className="absolute left-4 top-3.5 w-5 h-5 text-[var(--accent)]" />
               <input
-                type={showPassword ? "text" : "password"}
+                type="password"
+                required
                 placeholder="••••••••"
-                className="w-full bg-[var(--bg-main)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl py-3 pl-12 pr-12 focus:ring-2 focus:ring-[var(--color-terracotta)] focus:outline-none transition-all"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-[var(--bg-main)] text-[var(--text-main)] border border-[var(--border-color)] rounded-2xl py-3.5 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-[var(--color-terracotta)]"
               />
-                <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-4 text-[var(--text-muted)] hover:text-terracotta"
-              >
-                    {/* CORRECCIÓN AQUÍ: className dentro de los componentes de icono */}
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
             </div>
           </div>
 
-          {/* Recordar y Olvido */}
-          <div className="flex items-center justify-between text-xs">
-            <label className="flex items-center text-[var(--text-muted)] cursor-pointer">
-              <input type="checkbox" className="mr-2 rounded border-[var(--border-color)] accent-[var(--color-terracotta)]" />
-              Recordarme
-            </label>
-            <a href="#" className="text-[var(--color-forest)] font-semibold hover:underline">
-              ¿Olvidaste tu contraseña?
-            </a>
-          </div>
-
-          {/* Botón Terracotta (Siguiendo 4tCXMLD.JPG) */}
           <button
             type="submit"
-            className="w-full bg-[var(--color-terracotta)] hover:bg-[#c4664a] text-white font-bold py-4 rounded-2xl shadow-lg transition-all transform hover:-translate-y-1 active:scale-95"
+            disabled={loading}
+            className="w-full bg-[var(--color-terracotta)] hover:bg-[#c4664a] text-white font-bold py-4 rounded-2xl shadow-lg transition-all disabled:opacity-50"
           >
-            Iniciar Sesión
+            {loading ? "Iniciando sesión..." : "Entrar"}
           </button>
         </form>
 
-        {/* Registro */}
         <p className="text-center text-[var(--text-muted)] text-sm mt-8">
-          ¿No tienes cuenta? {' '}
-          <a href="#" className="text-[var(--color-terracotta)] font-bold hover:underline">
+          ¿No tienes cuenta?{" "}
+          <button
+            onClick={() => navigate("/register")}
+            className="text-[var(--color-terracotta)] font-bold hover:underline bg-transparent border-none cursor-pointer"
+          >
             Regístrate aquí
-          </a>
+          </button>
         </p>
       </div>
     </div>
