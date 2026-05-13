@@ -1,4 +1,4 @@
-# PerrosYGatos
+# Perros&Gatos
 
 
 Backend platform designed to connect **pet owners** with **animal behavior professionals**, such as trainers and ethologists.
@@ -32,17 +32,17 @@ It provides the foundation for managing users, pets, and professional services w
 
 Microservices-based backend where each service is responsible for a specific domain.
 
-Client  
-│  
-▼  
-Backend Services  
-├── `pyg-auth`  
-├── `pyg-owner`  
-└── `pyg-professional`
+Client (Frontend)
+       │
+       ▼
+  API Gateway (Port 9090)
+       │
+       ├─── /api/auth/** ───► Auth Service
+       ├─── /api/owner/** ───► Owner Service
+       └─── /api/prof/**  ───► Professional Service
 
-Services communicate using **REST APIs**, and each service manages its own domain logic and database.
 
-----------
+
 
 ## Tech Stack
 
@@ -61,13 +61,34 @@ Services communicate using **REST APIs**, and each service manages its own domai
 -   PostgreSQL
     
 -   Maven
+
+
+### Frontend
+
+-   React 18
+
+-   Vite
+
+-   Tailwind CSS
+
+-   Axios
+
+-   React Router Dom
+
+-   Lucide React
+
+-   JWT Decode
     
 
-### Infrastructure
+### Infrastructure & Tools
 
 -   Docker
     
 -   Docker Compose
+
+-   API Gateway
+
+-   PostgreSQL
     
 
 ----------
@@ -76,16 +97,21 @@ Services communicate using **REST APIs**, and each service manages its own domai
 
 | Service | Description |
 |---|---|
+| `pyg-gateway` | Entry Point. Centralized routing and request forwarding to microservices |
+| `pyg-frontend` | User Interface. React + Vite |
 | `pyg-auth` | Authentication and JWT validation |
 | `pyg-owner` | Pet owners and pets management |
 | `pyg-professional` | Professional profiles |
 
 ## Running Locally
+### How to Run
 
-Start the platform with Docker:
-````
-docker-compose up -d
-````
+1. **Clone the repository:**
+   ```bash
+   git clone <repo-url>
+1. **Start the platform with Docker:**
+   ```bash
+   docker-compose up
 ----------
 
 ## Swagger Documentation
