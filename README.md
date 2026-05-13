@@ -30,19 +30,11 @@ It provides the foundation for managing users, pets, and professional services w
 
 ## Architecture
 
-Microservices-based backend where each service is responsible for a specific domain.
-
-Client (Frontend)
-       │
-       ▼
-  API Gateway (Port 9090)
-       │
-       ├─── /api/auth/** ───► Auth Service
-       ├─── /api/owner/** ───► Owner Service
-       └─── /api/prof/**  ───► Professional Service
-
-
-
+* **Frontend:** `pyg-frontend` (Vite + React)
+* **API Gateway:** `pyg-gateway` (Port 9090) - *Single entry point*
+    * ──► `/api/auth/**` ──► **pyg-auth** (Port 8081)
+    * ──► `/api/owner/**` ──► **pyg-owner** (Port 8082)
+    * ──► `/api/prof/**` ──► **pyg-professional** (Port 8083)
 
 ## Tech Stack
 
