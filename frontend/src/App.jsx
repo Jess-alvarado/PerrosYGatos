@@ -17,6 +17,8 @@ import OwnerProfilePage from "./features/owners/OwnerProfilePage";
 import CommunityPage from "./features/community/CommunityPage";
 import CreatePetPage from "./features/owners/CreatePetPage";
 
+import api from "./api/api";
+
 const Home = () => {
   return (
     <div className="pt-8 pb-6">
@@ -86,10 +88,22 @@ function App() {
     localStorage.setItem("role", role);
   };
 
+  const handleLogout = async () => {
+    try {
+      await api.post("/api/auth/logout");
+    } catch (error) {
+      console.error("Error cerrando sesión en el servidor", error);
+    } finally {
+      localStorage.clear();
+      setUserRole(null);
+      window.location.href = "/";
+    }
+  };
+
   return (
     <Router>
       <div className="min-h-screen bg-[var(--bg-main)] transition-colors duration-300">
-        <Navbar userRole={userRole} />
+        <Navbar userRole={userRole} onLogout={handleLogout} />
 
         <main>
           <Routes>
