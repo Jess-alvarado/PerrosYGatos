@@ -33,7 +33,6 @@ public class TokenController {
         @PostMapping(value = "/validate", produces = MediaType.APPLICATION_JSON_VALUE)
         public ResponseEntity<TokenValidationResponse> validateToken(
                         @RequestHeader(value = "Authorization", required = false) String authHeader) {
-                System.out.println("VALOR RECIBIDO EN AUTH: [" + authHeader + "]");
                 if (authHeader == null || authHeader.isBlank()) {
                         return ResponseEntity.status(401).body(
                                         TokenValidationResponse.builder().valid(false).build());
