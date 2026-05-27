@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: pyg-auth-test
+  jackson:
+    serialization:
+      fail-on-empty-beans: false
+      indent-output: true
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+  datasource:
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        '[format_sql]': false
+        dialect: org.hibernate.dialect.H2Dialect
+    database-platform: org.hibernate.dialect.H2Dialect
+    open-in-view: false
+
+server:
+  port: 8080
+  error:
+    include-message: always
+
+jwt:
+  secret: dGVzdFNlY3JldEtleVBhcmFQcnVlYmFzUHlnQXV0aDEyMzQ1Njc4OTA=
+  expiration: 3600000
+  refresh-token: 604800000
+
+logging:
+  level:
+    root: ERROR
+    '[com.auth.pyg_auth]': DEBUG
+    '[org.springframework.web]': ERROR
+    '[org.hibernate.SQL]': ERROR
+    '[org.hibernate.type.descriptor.sql.BasicBinder]': ERROR
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+JWT_SECRET: dGVzdFNlY3JldEtleVBhcmFQcnVlYmFzUHlnQXV0aDEyMzQ1Njc4OTA=
+JWT_EXPIRATION: 3600000
+JWT_REFRESH_EXPIRATION: 604800000
