@@ -34,7 +34,7 @@ It provides the foundation for managing users, pets, and professional services w
 * **API Gateway:** `pyg-gateway` (Port 9090) - *Single entry point*
     * ──► `/api/auth/**` ──► **pyg-auth** (Port 8081)
     * ──► `/api/owner/**` ──► **pyg-owner** (Port 8082)
-    * ──► `/api/prof/**` ──► **pyg-professional** (Port 8083)
+    * ──► `/api/professional/**` ──► **pyg-professional** (Port 8083)
 
 ## Tech Stack
 
@@ -96,15 +96,38 @@ It provides the foundation for managing users, pets, and professional services w
 | `pyg-professional` | Professional profiles |
 
 ## Running Locally
-### How to Run
 
-1. **Clone the repository:**
-   ```bash
-   git clone <repo-url>
-1. **Start the platform with Docker:**
-   ```bash
-   docker-compose up
-----------
+### Requirements
+
+- Docker
+- Docker Compose
+
+### Setup
+
+1. Clone the repository
+
+```bash
+git clone <repo-url>
+cd perrosygatos
+```
+
+2. Create the environment file
+
+```bash
+cp .env.example .env
+```
+
+3. Start the platform
+
+```bash
+docker-compose up --build
+```
+
+### Notes
+
+- The project is configured to run using Docker Compose networking.
+- Database hosts use container names (e.g. `postgres`) instead of `localhost`.
+- JWT configuration is shared across microservices through the `.env` file.
 
 ## Swagger Documentation
 
