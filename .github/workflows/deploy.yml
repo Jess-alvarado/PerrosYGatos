@@ -1,0 +1,25 @@
+name: Git Push Production Deployment
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Descargar ultima version del codigo
+        uses: actions/checkout@v4
+
+      - name: Ejecutar Tests Unitarios
+        run: |
+          cd backend/pyg-auth && ./mvnw test
+          cd ../pyg-owner && ./mvnw test
+          cd ../pyg-professional && ./mvnw test
+
+      - name: Desplegar en Docker Compose
+        run: |
+          cd $GITHUB_WORKSPACE
+          docker compose down
+          docker compose up -d --build
