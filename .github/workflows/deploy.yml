@@ -20,9 +20,9 @@ jobs:
 
       - name: Run unit tests
         run: |
-          cd backend/pyg-auth && ./mvnw test
-          cd backend/pyg-owner && ./mvnw test
-          cd backend/pyg-professional && ./mvnw test
+          cd $GITHUB_WORKSPACE/backend/pyg-auth && ./mvnw test
+          cd $GITHUB_WORKSPACE/backend/pyg-owner && ./mvnw test
+          cd $GITHUB_WORKSPACE/backend/pyg-professional && ./mvnw test
 
       - name: Deploy with Docker Compose
         run: |
