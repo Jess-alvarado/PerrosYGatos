@@ -45,7 +45,7 @@ services:
       - AUTH_SERVICE_URL=http://pyg-auth:8081
 
     ports:
-      - "${SERVER_PORT_AUTH}:${SERVER_PORT_AUTH}"
+      - "8081:8081"    
     depends_on:
       postgres:
         condition: service_healthy
@@ -77,7 +77,7 @@ services:
       - JWT_EXPIRATION=${JWT_EXPIRATION}
       - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION}
     ports:
-      - "${SERVER_PORT_OWNER}:${SERVER_PORT_OWNER}"
+      - "8082:8082"
     depends_on:
       postgres:
         condition: service_healthy
@@ -109,7 +109,7 @@ services:
       - JWT_EXPIRATION=${JWT_EXPIRATION}
       - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION}
     ports:
-      - "${SERVER_PORT_PROFESSIONAL}:${SERVER_PORT_PROFESSIONAL}"
+      - "8083:8083"
     depends_on:
       postgres:
         condition: service_healthy
@@ -126,7 +126,7 @@ services:
       - OWNER_SERVICE_URL=http://pyg-owner:${SERVER_PORT_OWNER}
       - PROFESSIONAL_SERVICE_URL=http://pyg-professional:${SERVER_PORT_PROFESSIONAL}
     ports:
-      - "${SERVER_PORT_GATEWAY}:${SERVER_PORT_GATEWAY}"
+      - "9090:9090"
     depends_on:
       - pyg-auth
       - pyg-owner
