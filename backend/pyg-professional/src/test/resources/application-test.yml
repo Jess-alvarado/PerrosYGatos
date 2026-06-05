@@ -50,8 +50,8 @@ feign:
   client:
     config:
       default:
-        connectTimeout: 5000
-        readTimeout: 5000
+        connectTimeout: 1000
+        readTimeout: 1000
         loggerLevel: NONE
 
 springdoc:
