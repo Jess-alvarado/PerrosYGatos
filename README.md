@@ -161,7 +161,8 @@ It explores practical backend engineering concepts such as:
     
 
 The goal is to build a clean and extensible backend foundation that can support future platform features and additional services.
-    
+
+Currently refactoring token validation from pyg-auth to pyg-gateway, extracting JWT claims at the gateway level and forwarding them via headers — reducing coupling between business services and the auth service.
 
 ----------
 
