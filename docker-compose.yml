@@ -118,6 +118,7 @@ services:
       - AUTH_SERVICE_URL=http://pyg-auth:${SERVER_PORT_AUTH}
       - OWNER_SERVICE_URL=http://pyg-owner:${SERVER_PORT_OWNER}
       - PROFESSIONAL_SERVICE_URL=http://pyg-professional:${SERVER_PORT_PROFESSIONAL}
+      - FRONTEND_URL=${FRONTEND_URL}
     ports:
       - "9090:9090"
     depends_on:
@@ -128,13 +129,13 @@ services:
   pyg-frontend:
     build:
       context: ./frontend
+      args:
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL}
     container_name: pyg-frontend
-    environment:
-      - VITE_API_URL=http://localhost:${SERVER_PORT_GATEWAY}
     ports:
-      - "5173:5173"
+    - "80:80"
     depends_on:
-      - pyg-gateway
+    - pyg-gateway
 
 volumes:
   pgdata:
