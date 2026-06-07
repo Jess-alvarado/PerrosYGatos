@@ -8,7 +8,10 @@ spring:
         add-to-simple-url-handler-mapping: true
         cors-configurations:
           "[/**]":
-            allowedOrigins: "http://localhost:5173"
+            allowedOriginPatterns:
+              - "http://localhost:5173"
+              - "https://harddisk-handshake-decode.ngrok-free.dev"
+              - "${FRONTEND_URL}"
             allowedMethods:
               - GET
               - POST
@@ -50,3 +53,9 @@ spring:
             - Path=/api/professionals/**
           filters:
             - StripPrefix=1
+
+        - id: frontend
+          uri: http://pyg-frontend:80
+          predicates:
+            - Path=/**
+          order: 999
