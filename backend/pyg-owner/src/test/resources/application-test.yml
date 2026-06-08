@@ -53,7 +53,3 @@ springdoc:
     enabled: true
   swagger-ui:
     path: /swagger-ui.html
-
-JWT_SECRET: dGVzdFNlY3JldEtleVBhcmFQcnVlYmFzUHlnQXV0aDEyMzQ1Njc4OTA=
-JWT_EXPIRATION: 3600000
-JWT_REFRESH_EXPIRATION: 604800000
