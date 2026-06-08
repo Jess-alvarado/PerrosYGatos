@@ -37,7 +37,15 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(properties = {
         "jwt.secret=dGVzdFNlY3JldEtleVBhcmFQcnVlYmFzUHlnQXV0aDEyMzQ1Njc4OTA=",
         "jwt.expiration=3600000",
-        "jwt.refresh-token=604800000"
+        "jwt.refresh-token=604800000",
+        "spring.datasource.url=jdbc:h2:mem:testdb",
+        "spring.datasource.driver-class-name=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "spring.jpa.hibernate.ddl-auto=create-drop",
+        "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
+        "logging.level.root=ERROR",
+        "spring.config.import="
 })
 class OwnerControllerTest {
 
