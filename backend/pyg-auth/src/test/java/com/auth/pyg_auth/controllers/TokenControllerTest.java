@@ -25,6 +25,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = TokenController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
+@TestPropertySource(properties = {
+        "jwt.secret=dGVzdFNlY3JldEtleVBhcmFQcnVlYmFzUHlnQXV0aDEyMzQ1Njc4OTA=",
+        "jwt.expiration=3600000",
+        "jwt.refresh-expiration=604800000"
+})
 class TokenControllerTest {
 
     @Autowired
