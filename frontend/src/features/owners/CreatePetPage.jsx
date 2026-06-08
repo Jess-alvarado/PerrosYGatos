@@ -35,7 +35,7 @@ const CreatePetPage = () => {
         age: parseInt(formData.age), // Aseguramos que sea número
       };
 
-      await axios.post("http://localhost:9090/api/pets", payload, {
+      await axios.post("/api/pets", payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
