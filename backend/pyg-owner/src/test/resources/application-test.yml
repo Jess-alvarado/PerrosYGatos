@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: ""
   application:
     name: pyg-owner-test
   datasource:
