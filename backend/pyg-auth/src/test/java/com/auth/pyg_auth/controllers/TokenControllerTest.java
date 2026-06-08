@@ -13,7 +13,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.MockMvc;
-
+import org.springframework.test.context.ActiveProfiles;
 import java.util.Date;
 
 import static org.mockito.ArgumentMatchers.anyString;
@@ -24,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = TokenController.class)
 @AutoConfigureMockMvc(addFilters = false)
+@ActiveProfiles("test")
 class TokenControllerTest {
 
     @Autowired

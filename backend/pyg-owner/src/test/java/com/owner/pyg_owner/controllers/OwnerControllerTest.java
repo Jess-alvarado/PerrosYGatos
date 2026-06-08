@@ -27,10 +27,12 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
+import org.springframework.test.context.ActiveProfiles;
 
 
 @WebMvcTest(controllers = OwnerController.class)
 @AutoConfigureMockMvc(addFilters = false)
+@ActiveProfiles("test")
 class OwnerControllerTest {
 
     @Autowired
