@@ -24,6 +24,9 @@ jobs:
           cd $GITHUB_WORKSPACE/backend/pyg-owner && ./mvnw test
           cd $GITHUB_WORKSPACE/backend/pyg-professional && ./mvnw test
 
+      - name: Copy environment file
+        run: cp ~/projects/PerrosYGatos/.env $GITHUB_WORKSPACE/.env
+
       - name: Deploy with Docker Compose
         run: |
           cd $GITHUB_WORKSPACE
