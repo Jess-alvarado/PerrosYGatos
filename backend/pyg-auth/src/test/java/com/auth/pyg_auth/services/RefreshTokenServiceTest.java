@@ -32,9 +32,9 @@ class RefreshTokenServiceTest {
     @InjectMocks
     private RefreshTokenService refreshTokenService;
 
-    private static final Long REFRESH_EXPIRATION_MS = 604800000L;
+    private static final Long REFRESH_EXPIRATION_MS = 604800000L; // 7 days
 
-    private User usuarioPrueba;
+    private User mockUser;
 
     @BeforeEach
     void setUp() {
@@ -42,147 +42,148 @@ class RefreshTokenServiceTest {
                 refreshTokenService, "refreshTokenExpirationMs", REFRESH_EXPIRATION_MS
         );
 
-        Role rol = Role.builder().id(1L).name("ROLE_OWNER").build();
+        Role role = Role.builder().id(1L).name("ROLE_OWNER").build();
 
-        usuarioPrueba = User.builder()
+        mockUser = User.builder()
                 .id(1L)
-                .username("ana@perrosgatos.cl")
-                .password("password_encriptado")
-                .firstname("Ana")
-                .lastname("González")
-                .role(rol)
+                .username("jess@perrosygatos.cl")
+                .password("encoded_password")
+                .firstname("Jess")
+                .lastname("Alvarado")
+                .role(role)
                 .build();
     }
 
     @Test
     @DisplayName("Should create refresh token with correct user data")
-    void createRefreshToken_debeCrearTokenConDatosCorrectos() {
+    void createRefreshToken_withValidUser_shouldCreateTokenWithCorrectData() {
         when(refreshTokenRepository.save(any(RefreshToken.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        RefreshToken resultado = refreshTokenService.createRefreshToken(usuarioPrueba);
+        RefreshToken result = refreshTokenService.createRefreshToken(mockUser);
 
-        assertThat(resultado.getUser()).isEqualTo(usuarioPrueba);
-        assertThat(resultado.isRevoked()).isFalse();
-        assertThat(resultado.getToken()).isNotBlank();
-        assertThat(resultado.getExpiresAt()).isAfter(LocalDateTime.now());
+        assertThat(result.getUser()).isEqualTo(mockUser);
+        assertThat(result.isRevoked()).isFalse();
+        assertThat(result.getToken()).isNotBlank();
+        assertThat(result.getExpiresAt()).isAfter(LocalDateTime.now());
     }
 
     @Test
     @DisplayName("Should generate a unique UUID token for every request")
-    void createRefreshToken_debeGenerarTokenUnico() {
+    void createRefreshToken_shouldGenerateUniqueTokens() {
         when(refreshTokenRepository.save(any(RefreshToken.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        RefreshToken token1 = refreshTokenService.createRefreshToken(usuarioPrueba);
-        RefreshToken token2 = refreshTokenService.createRefreshToken(usuarioPrueba);
+        RefreshToken token1 = refreshTokenService.createRefreshToken(mockUser);
+        RefreshToken token2 = refreshTokenService.createRefreshToken(mockUser);
 
         assertThat(token1.getToken()).isNotEqualTo(token2.getToken());
     }
 
     @Test
     @DisplayName("Should set token expiration time to approximately 7 days")
-    void createRefreshToken_debeExpirarEnElTiempoCorrect() {
+    void createRefreshToken_shouldHaveCorrectExpirationTime() {
         when(refreshTokenRepository.save(any(RefreshToken.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        RefreshToken resultado = refreshTokenService.createRefreshToken(usuarioPrueba);
+        RefreshToken result = refreshTokenService.createRefreshToken(mockUser);
 
-        LocalDateTime ahora = LocalDateTime.now();
-        LocalDateTime expiracionEsperada = ahora.plusSeconds(REFRESH_EXPIRATION_MS / 1000);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expectedExpiration = now.plusSeconds(REFRESH_EXPIRATION_MS / 1000);
 
-        assertThat(resultado.getExpiresAt())
-                .isAfter(ahora.plusDays(6))
-                .isBefore(expiracionEsperada.plusSeconds(5));
+        assertThat(result.getExpiresAt())
+                .isAfter(now.plusDays(6))
+                .isBefore(expectedExpiration.plusSeconds(5));
     }
 
     @Test
     @DisplayName("Should return the token when it is valid and active")
-    void validateRefreshToken_conTokenValido_debeRetornarToken() {
-        RefreshToken tokenValido = RefreshToken.builder()
-                .token("uuid-valido")
-                .user(usuarioPrueba)
+    void validateRefreshToken_withValidToken_shouldReturnToken() {
+        RefreshToken validToken = RefreshToken.builder()
+                .token("valid-uuid")
+                .user(mockUser)
                 .expiresAt(LocalDateTime.now().plusDays(3))
                 .revoked(false)
                 .build();
 
-        when(refreshTokenRepository.findByTokenAndRevokedFalse("uuid-valido"))
-                .thenReturn(Optional.of(tokenValido));
+        when(refreshTokenRepository.findByTokenAndRevokedFalse("valid-uuid"))
+                .thenReturn(Optional.of(validToken));
 
-        RefreshToken resultado = refreshTokenService.validateRefreshToken("uuid-valido");
+        RefreshToken result = refreshTokenService.validateRefreshToken("valid-uuid");
 
-        assertThat(resultado.getToken()).isEqualTo("uuid-valido");
+        assertThat(result.getToken()).isEqualTo("valid-uuid");
     }
 
     @Test
     @DisplayName("Should throw exception when token is not found or revoked")
-    void validateRefreshToken_conTokenNoExistente_debeLanzarExcepcion() {
-        when(refreshTokenRepository.findByTokenAndRevokedFalse("token-inexistente"))
+    void validateRefreshToken_withNonExistentToken_shouldThrowRuntimeException() {
+        when(refreshTokenRepository.findByTokenAndRevokedFalse("missing-token"))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() ->
-                refreshTokenService.validateRefreshToken("token-inexistente"))
+                refreshTokenService.validateRefreshToken("missing-token"))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Refresh token not found or revoked");
     }
 
     @Test
     @DisplayName("Should throw exception when token exists but is expired")
-    void validateRefreshToken_conTokenExpirado_debeLanzarExcepcion() {
-        RefreshToken tokenExpirado = RefreshToken.builder()
-                .token("uuid-expirado")
-                .user(usuarioPrueba)
+    void validateRefreshToken_withExpiredToken_shouldThrowRuntimeException() {
+        RefreshToken expiredToken = RefreshToken.builder()
+                .token("expired-uuid")
+                .user(mockUser)
                 .expiresAt(LocalDateTime.now().minusDays(1))
                 .revoked(false)
                 .build();
 
-        when(refreshTokenRepository.findByTokenAndRevokedFalse("uuid-expirado"))
-                .thenReturn(Optional.of(tokenExpirado));
+        when(refreshTokenRepository.findByTokenAndRevokedFalse("expired-uuid"))
+                .thenReturn(Optional.of(expiredToken));
 
         assertThatThrownBy(() ->
-                refreshTokenService.validateRefreshToken("uuid-expirado"))
+                refreshTokenService.validateRefreshToken("expired-uuid"))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Refresh token expired");
     }
 
     @Test
     @DisplayName("Should mark token as revoked and save it when revoking an active token")
-    void revokeToken_conTokenExistente_debeMarcarlo() {
-        RefreshToken tokenActivo = RefreshToken.builder()
-                .token("uuid-activo")
-                .user(usuarioPrueba)
+    void revokeToken_withActiveToken_shouldMarkAsRevokedAndSave() {
+        // Arrange
+        RefreshToken activeToken = RefreshToken.builder()
+                .token("active-uuid")
+                .user(mockUser)
                 .expiresAt(LocalDateTime.now().plusDays(7))
                 .revoked(false)
                 .build();
 
-        when(refreshTokenRepository.findByTokenAndRevokedFalse("uuid-activo"))
-                .thenReturn(Optional.of(tokenActivo));
+        when(refreshTokenRepository.findByTokenAndRevokedFalse("active-uuid"))
+                .thenReturn(Optional.of(activeToken));
 
-        refreshTokenService.revokeToken("uuid-activo");
+        refreshTokenService.revokeToken("active-uuid");
 
-        assertThat(tokenActivo.isRevoked()).isTrue();
-        verify(refreshTokenRepository, times(1)).save(tokenActivo);
+        assertThat(activeToken.isRevoked()).isTrue();
+        verify(refreshTokenRepository, times(1)).save(activeToken);
     }
 
     @Test
     @DisplayName("Should throw exception when trying to revoke a non-existent token")
-    void revokeToken_conTokenNoExistente_debeLanzarExcepcion() {
-        when(refreshTokenRepository.findByTokenAndRevokedFalse("no-existe"))
+    void revokeToken_withNonExistentToken_shouldThrowRuntimeException() {
+        when(refreshTokenRepository.findByTokenAndRevokedFalse("non-existent"))
                 .thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> refreshTokenService.revokeToken("no-existe"))
+        assertThatThrownBy(() -> refreshTokenService.revokeToken("non-existent"))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Refresh token not found or already revoked");
     }
 
     @Test
     @DisplayName("Should mark and save all active tokens for a user as revoked")
-    void revokeAllUserTokens_debeMarcarTodosComoRevocados() {
+    void revokeAllUserTokens_shouldRevokeAndSaveAllTokens() {
         RefreshToken token1 = RefreshToken.builder()
-                .token("uuid-1").user(usuarioPrueba)
+                .token("uuid-1").user(mockUser)
                 .expiresAt(LocalDateTime.now().plusDays(7)).revoked(false).build();
         RefreshToken token2 = RefreshToken.builder()
-                .token("uuid-2").user(usuarioPrueba)
+                .token("uuid-2").user(mockUser)
                 .expiresAt(LocalDateTime.now().plusDays(5)).revoked(false).build();
 
         when(refreshTokenRepository.findAllByUserIdAndRevokedFalse(1L))
@@ -193,6 +194,7 @@ class RefreshTokenServiceTest {
         assertThat(token1.isRevoked()).isTrue();
         assertThat(token2.isRevoked()).isTrue();
 
+        @SuppressWarnings("unchecked")
         ArgumentCaptor<List<RefreshToken>> captor = ArgumentCaptor.forClass(List.class);
         verify(refreshTokenRepository).saveAll(captor.capture());
         assertThat(captor.getValue()).hasSize(2);
@@ -200,7 +202,7 @@ class RefreshTokenServiceTest {
 
     @Test
     @DisplayName("Should call saveAll with an empty list if user has no active tokens")
-    void revokeAllUserTokens_sinTokensActivos_noDebeGuardarNada() {
+    void revokeAllUserTokens_withNoActiveTokens_shouldSaveEmptyList() {
         when(refreshTokenRepository.findAllByUserIdAndRevokedFalse(99L))
                 .thenReturn(List.of());
 

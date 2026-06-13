@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: pyg-gateway-test
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          "[/**]":
+            allowedOriginPatterns: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+
+      routes:
+        - id: auth-service-test
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/auth/**
+
+server:
+  port: 9091
+  error:
+    include-message: always
+
+
+jwt:
+  secret: dGVzdFNlY3JldEtleVBhcmFQcnVlYmFzUHlnQXV0aDEyMzQ1Njc4OTA=
+
+logging:
+  level:
+    root: ERROR
+    '[com.gateway.pyg_gateway]': DEBUG
+    '[org.springframework.cloud.gateway]': ERROR

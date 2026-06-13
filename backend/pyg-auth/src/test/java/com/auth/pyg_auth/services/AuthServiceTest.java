@@ -22,6 +22,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,70 +45,70 @@ class AuthServiceTest {
     @InjectMocks
     private AuthService authService;
 
-    private User usuarioPrueba;
-    private Role rolPrueba;
-    private RefreshToken refreshTokenPrueba;
+    private User mockUser;
+    private Role mockRole;
+    private RefreshToken mockRefreshToken;
 
     @BeforeEach
     void setUp() {
-        rolPrueba = Role.builder()
+        mockRole = Role.builder()
                 .id(1L)
                 .name("ROLE_OWNER")
                 .build();
 
-        usuarioPrueba = User.builder()
+        mockUser = User.builder()
                 .id(1L)
-                .username("ana@perrosgatos.cl")
-                .password("password_encriptado")
-                .firstname("Ana")
-                .lastname("González")
-                .role(rolPrueba)
+                .username("jess@perrosygatos.cl")
+                .password("encoded_password")
+                .firstname("Jess")
+                .lastname("Alvarado")
+                .role(mockRole)
                 .build();
 
-        refreshTokenPrueba = RefreshToken.builder()
+        mockRefreshToken = RefreshToken.builder()
                 .id(1L)
-                .token("refresh-token-uuid-prueba")
-                .user(usuarioPrueba)
+                .token("refresh-token-uuid-string")
+                .user(mockUser)
                 .expiresAt(LocalDateTime.now().plusDays(7))
                 .revoked(false)
                 .build();
     }
 
     @Test
-    @DisplayName("Successful login returns access token and refresh token")
-    void login_conCredencialesValidas_debeRetornarAuthResponse() {
+    @DisplayName("Login with valid credentials should return AuthResponse")
+    void login_withValidCredentials_shouldReturnAuthResponse() {
+        // Arrange
         LoginRequest request = LoginRequest.builder()
-                .username("ana@perrosgatos.cl")
+                .username("jess@perrosygatos.cl")
                 .password("password123")
                 .build();
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(null);
-
-        when(userRepository.findByUsername("ana@perrosgatos.cl"))
-                .thenReturn(Optional.of(usuarioPrueba));
-        when(jwtService.generateAccessToken(usuarioPrueba))
-                .thenReturn("access-token-generado");
-        when(refreshTokenService.createRefreshToken(usuarioPrueba))
-                .thenReturn(refreshTokenPrueba);
+        when(userRepository.findByUsername("jess@perrosygatos.cl"))
+                .thenReturn(Optional.of(mockUser));
+        when(jwtService.generateAccessToken(mockUser))
+                .thenReturn("access-token-string");
+        when(refreshTokenService.createRefreshToken(mockUser))
+                .thenReturn(mockRefreshToken);
 
         AuthResponse response = authService.login(request);
 
-        assertThat(response.getAccessToken()).isEqualTo("access-token-generado");
-        assertThat(response.getRefreshToken()).isEqualTo("refresh-token-uuid-prueba");
+        assertThat(response.getAccessToken()).isEqualTo("access-token-string");
+        assertThat(response.getRefreshToken()).isEqualTo("refresh-token-uuid-string");
         assertThat(response.getTokenType()).isEqualTo("Bearer");
     }
 
     @Test
-    @DisplayName("Login with non-existent user throws exception")
-    void login_conUsuarioNoExistente_debeLanzarExcepcion() {
+    @DisplayName("Login with non existent user should throw RuntimeException")
+    void login_withNonExistentUser_shouldThrowRuntimeException() {
         LoginRequest request = LoginRequest.builder()
-                .username("noexiste@perrosgatos.cl")
-                .password("cualquiera")
+                .username("missing@perrosygatos.cl")
+                .password("anyPassword")
                 .build();
 
         when(authenticationManager.authenticate(any())).thenReturn(null);
-        when(userRepository.findByUsername("noexiste@perrosgatos.cl"))
+        when(userRepository.findByUsername("missing@perrosygatos.cl"))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.login(request))
@@ -116,15 +117,15 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("Login with invalid credentials throws BadCredentialsException")
-    void login_conCredencialesInvalidas_debeLanzarBadCredentialsException() {
+    @DisplayName("Login with invalid credentials should throw BadCredentialsException")
+    void login_withInvalidCredentials_shouldThrowBadCredentialsException() {
         LoginRequest request = LoginRequest.builder()
-                .username("ana@perrosgatos.cl")
-                .password("password_incorrecto")
+                .username("jess@perrosygatos.cl")
+                .password("wrong_password")
                 .build();
 
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-                .thenThrow(new BadCredentialsException("Credenciales inválidas"));
+                .thenThrow(new BadCredentialsException("Bad credentials"));
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(BadCredentialsException.class);
@@ -133,32 +134,26 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("Successful registration saves user and returns tokens")
-    void register_conDatosValidos_debeCrearUsuarioYRetornarTokens() {
+    @DisplayName("Register with valid data should save user and return tokens")
+    void register_withValidData_shouldSaveUserAndReturnAuthResponse() {
         UserRegisterRequest request = UserRegisterRequest.builder()
-                .username("nuevo@perrosgatos.cl")
+                .username("newuser@perrosygatos.cl")
                 .password("password123")
-                .firstname("Pedro")
-                .lastname("Soto")
-                .rolename("ROLE_PROFESSIONAL")
+                .firstname("Alex")
+                .lastname("Smith")
+                .rolename("ROLE_OWNER")
                 .build();
 
-        Role rolProfesional = Role.builder().id(2L).name("ROLE_PROFESSIONAL").build();
-
-        when(roleRepository.findByName("ROLE_PROFESSIONAL"))
-                .thenReturn(Optional.of(rolProfesional));
-        when(passwordEncoder.encode("password123"))
-                .thenReturn("password_encriptado_bcrypt");
-        when(userRepository.save(any(User.class)))
-                .thenReturn(usuarioPrueba);
-        when(jwtService.generateAccessToken(any(User.class)))
-                .thenReturn("nuevo-access-token");
-        when(refreshTokenService.createRefreshToken(any(User.class)))
-                .thenReturn(refreshTokenPrueba);
+        when(roleRepository.findByName("ROLE_OWNER")).thenReturn(Optional.of(mockRole));
+        when(passwordEncoder.encode("password123")).thenReturn("bcrypt_encoded_string");
+        when(userRepository.save(any(User.class))).thenReturn(mockUser);
+        when(jwtService.generateAccessToken(any(User.class))).thenReturn("new-access-token");
+        when(refreshTokenService.createRefreshToken(any(User.class))).thenReturn(mockRefreshToken);
 
         AuthResponse response = authService.register(request);
 
-        assertThat(response.getAccessToken()).isEqualTo("nuevo-access-token");
+        assertThat(response.getAccessToken()).isEqualTo("new-access-token");
+        assertThat(response.getRefreshToken()).isEqualTo("refresh-token-uuid-string");
         assertThat(response.getTokenType()).isEqualTo("Bearer");
 
         verify(passwordEncoder, times(1)).encode("password123");
@@ -166,18 +161,15 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("Registration with non-existent role throws exception")
-    void register_conRolInexistente_debeLanzarExcepcion() {
+    @DisplayName("Register with non existent role should throw RuntimeException")
+    void register_withNonExistentRole_shouldThrowRuntimeException() {
         UserRegisterRequest request = UserRegisterRequest.builder()
-                .username("nuevo@perrosgatos.cl")
+                .username("newuser@perrosygatos.cl")
                 .password("password123")
-                .firstname("Pedro")
-                .lastname("Soto")
-                .rolename("ROLE_INEXISTENTE")
+                .rolename("ROLE_INVALID")
                 .build();
 
-        when(roleRepository.findByName("ROLE_INEXISTENTE"))
-                .thenReturn(Optional.empty());
+        when(roleRepository.findByName("ROLE_INVALID")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.register(request))
                 .isInstanceOf(RuntimeException.class)
@@ -187,48 +179,52 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("Valid refresh token rotates tokens correctly")
-    void refresh_conRefreshTokenValido_debeRotarTokens() {
+    @DisplayName("Refresh with valid token should revoke old and create new tokens")
+    void refresh_withValidToken_shouldRotateTokens() {
         RefreshTokenRequest request = RefreshTokenRequest.builder()
-                .refreshToken("refresh-token-uuid-prueba")
+                .refreshToken("refresh-token-uuid-string")
                 .build();
 
-        RefreshToken nuevoRefreshToken = RefreshToken.builder()
+        RefreshToken newRefreshToken = RefreshToken.builder()
                 .id(2L)
-                .token("nuevo-refresh-token-uuid")
-                .user(usuarioPrueba)
+                .token("brand-new-refresh-token")
+                .user(mockUser)
                 .expiresAt(LocalDateTime.now().plusDays(7))
                 .revoked(false)
                 .build();
 
-        when(refreshTokenService.validateRefreshToken("refresh-token-uuid-prueba"))
-                .thenReturn(refreshTokenPrueba);
-        when(jwtService.generateAccessToken(usuarioPrueba))
-                .thenReturn("nuevo-access-token");
-        when(refreshTokenService.createRefreshToken(usuarioPrueba))
-                .thenReturn(nuevoRefreshToken);
+        when(refreshTokenService.validateRefreshToken("refresh-token-uuid-string"))
+                .thenReturn(mockRefreshToken);
+        when(jwtService.generateAccessToken(mockUser))
+                .thenReturn("refreshed-access-token");
+        when(refreshTokenService.createRefreshToken(mockUser))
+                .thenReturn(newRefreshToken);
 
         AuthResponse response = authService.refresh(request);
 
-        assertThat(response.getAccessToken()).isEqualTo("nuevo-access-token");
-        assertThat(response.getRefreshToken()).isEqualTo("nuevo-refresh-token-uuid");
+        assertThat(response.getAccessToken()).isEqualTo("refreshed-access-token");
+        assertThat(response.getRefreshToken()).isEqualTo("brand-new-refresh-token");
 
-        verify(refreshTokenService, times(1)).revokeToken("refresh-token-uuid-prueba");
+        verify(refreshTokenService, times(1)).revokeToken("refresh-token-uuid-string");
     }
 
     @Test
-    @DisplayName("Logout revokes access token and all refresh tokens for the user")
-    void logout_debeRevocarAccessTokenYRefreshTokens() {
-        String accessToken = "access-token-a-revocar";
+    @DisplayName("Logout should blacklist JWT in Redis and revoke all refresh tokens")
+    void logout_shouldBlacklistJwtAndRevokeRefreshTokens() {
+        String accessToken = "fake-valid-access-token";
+        String mockedJti = "mocked-jti-uuid";
+        long longTimeInFuture = System.currentTimeMillis() + 3600000L;
+        Date expirationDate = new Date(longTimeInFuture);
 
         when(jwtService.getUserIdFromToken(accessToken)).thenReturn(1L);
-        when(jwtService.getExpirationDateFromToken(accessToken))
-                .thenReturn(new java.util.Date(System.currentTimeMillis() + 3600000L));
+        when(jwtService.getJtiFromToken(accessToken)).thenReturn(mockedJti);
+        when(jwtService.getExpirationDateFromToken(accessToken)).thenReturn(expirationDate);
 
         authService.logout(accessToken);
 
         verify(accessTokenBlacklistService, times(1))
-                .blacklistToken(eq(accessToken), any());
+                .blacklist(eq(mockedJti), anyLong());
+
         verify(refreshTokenService, times(1))
                 .revokeAllUserTokens(1L);
     }

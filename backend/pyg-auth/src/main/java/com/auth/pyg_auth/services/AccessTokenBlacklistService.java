@@ -1,36 +1,30 @@
 package com.auth.pyg_auth.services;
 
-import com.auth.pyg_auth.models.BlacklistedAccessToken;
-import com.auth.pyg_auth.repositories.BlacklistedAccessTokenRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import jakarta.transaction.Transactional;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
 public class AccessTokenBlacklistService {
 
-    private final BlacklistedAccessTokenRepository blacklistedAccessTokenRepository;
+    private final RedisTemplate<String, String> redisTemplate;
+    private static final String BLACKLIST_PREFIX = "blacklist:";
 
-    @Transactional
-    public void blacklistToken(String token, Date expiresAt) {
-        if (blacklistedAccessTokenRepository.existsByToken(token)) {
-            return;
-        }
-
-        BlacklistedAccessToken blacklistedToken = BlacklistedAccessToken.builder()
-                .token(token)
-                .expiresAt(LocalDateTime.ofInstant(expiresAt.toInstant(), ZoneId.systemDefault()))
-                .build();
-
-        blacklistedAccessTokenRepository.save(blacklistedToken);
+    public void blacklist(String jti, long ttlMillis) {
+        redisTemplate.opsForValue().set(
+                BLACKLIST_PREFIX + jti,
+                "revoked",
+                ttlMillis,
+                TimeUnit.MILLISECONDS
+        );
     }
 
-    public boolean isBlacklisted(String token) {
-        return blacklistedAccessTokenRepository.existsByToken(token);
+    public boolean isBlacklisted(String jti) {
+        return Boolean.TRUE.equals(
+                redisTemplate.hasKey(BLACKLIST_PREFIX + jti)
+        );
     }
 }

@@ -1,7 +1,20 @@
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION}
+
 server:
   port: 9090
 
 spring:
+  config:
+    import: optional:file:.env[.properties]
+
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+
+
   cloud:
     gateway:
       globalcors:
@@ -9,6 +22,7 @@ spring:
         cors-configurations:
           "[/**]":
             allowedOriginPatterns:
+              - "http://localhost"
               - "http://localhost:5173"
               - "https://harddisk-handshake-decode.ngrok-free.dev"
               - "${FRONTEND_URL}"

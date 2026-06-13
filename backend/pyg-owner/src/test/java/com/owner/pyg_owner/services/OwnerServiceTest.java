@@ -1,9 +1,7 @@
 package com.owner.pyg_owner.services;
 
-import com.owner.pyg_owner.clients.AuthServiceClient;
 import com.owner.pyg_owner.dto.requests.OwnerCreateRequest;
 import com.owner.pyg_owner.dto.responses.OwnerResponse;
-import com.owner.pyg_owner.dto.responses.TokenValidationResponse;
 import com.owner.pyg_owner.models.OwnerProfile;
 import com.owner.pyg_owner.repositories.OwnerRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -29,41 +27,25 @@ class OwnerServiceTest {
     @Mock
     private OwnerRepository ownerRepo;
 
-    @Mock
-    private AuthServiceClient authServiceClient;
-
     @InjectMocks
     private OwnerService ownerService;
 
-    private static final String BEARER_TOKEN = "Bearer eyJhbGciOiJIUzI1NiJ9.test.signature";
-    private static final Long USER_ID = 1L;
-
-    private TokenValidationResponse validToken;
+    private static final Long TEST_USER_ID = 123L;
     private OwnerCreateRequest testRequest;
 
     @BeforeEach
     void setUp() {
-        validToken = TokenValidationResponse.builder()
-                .userId(USER_ID)
-                .username("ana.gonzalez")
-                .role("ROLE_OWNER")
-                .valid(true)
-                .expiresAt(System.currentTimeMillis() + 3600000L)
-                .build();
-
         testRequest = new OwnerCreateRequest(
                 "+56912345678",
-                "Av. Siempreviva 742, Santiago",
+                "Av. Siempreviva 742, Linares",
                 LocalDate.of(1990, 5, 15)
         );
     }
 
-
     @Test
-    @DisplayName("Creates new profile when user has none")
-    void createOrUpdateProfile_withNoExistingProfile_shouldCreateOne() {
-        when(authServiceClient.validateToken(BEARER_TOKEN)).thenReturn(validToken);
-        when(ownerRepo.findByUserId(USER_ID)).thenReturn(Optional.empty());
+    @DisplayName("Should create a new owner profile when user has no existing profile")
+    void createOrUpdateProfile_WithNoExistingProfile_ShouldCreateNewProfile() {
+        when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.empty());
         when(ownerRepo.save(any(OwnerProfile.class)))
                 .thenAnswer(invocation -> {
                     OwnerProfile p = invocation.getArgument(0);
@@ -71,28 +53,27 @@ class OwnerServiceTest {
                     return p;
                 });
 
-        OwnerResponse response = ownerService.createOrUpdateProfile(BEARER_TOKEN, testRequest);
+        OwnerResponse response = ownerService.createOrUpdateProfile(TEST_USER_ID, testRequest);
 
-        assertThat(response.userId()).isEqualTo(USER_ID);
+        assertThat(response.userId()).isEqualTo(TEST_USER_ID);
         assertThat(response.phone()).isEqualTo("+56912345678");
-        assertThat(response.address()).isEqualTo("Av. Siempreviva 742, Santiago");
+        assertThat(response.address()).isEqualTo("Av. Siempreviva 742, Linares");
         assertThat(response.birthDate()).isEqualTo(LocalDate.of(1990, 5, 15));
         verify(ownerRepo, times(1)).save(any(OwnerProfile.class));
     }
 
     @Test
-    @DisplayName("Updates existing profile without creating a new one")
-    void createOrUpdateProfile_withExistingProfile_shouldUpdateIt() {
+    @DisplayName("Should update existing owner profile details instead of creating a new record")
+    void createOrUpdateProfile_WithExistingProfile_ShouldUpdateCurrentProfile() {
         OwnerProfile existingProfile = OwnerProfile.builder()
                 .id(10L)
-                .userId(USER_ID)
+                .userId(TEST_USER_ID)
                 .phone("+56900000000")
                 .address("Old address")
                 .birthDate(LocalDate.of(1990, 1, 1))
                 .build();
 
-        when(authServiceClient.validateToken(BEARER_TOKEN)).thenReturn(validToken);
-        when(ownerRepo.findByUserId(USER_ID)).thenReturn(Optional.of(existingProfile));
+        when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.of(existingProfile));
         when(ownerRepo.save(any(OwnerProfile.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -102,7 +83,7 @@ class OwnerServiceTest {
                 LocalDate.of(1990, 5, 15)
         );
 
-        OwnerResponse response = ownerService.createOrUpdateProfile(BEARER_TOKEN, updateRequest);
+        OwnerResponse response = ownerService.createOrUpdateProfile(TEST_USER_ID, updateRequest);
 
         assertThat(response.phone()).isEqualTo("+56999999999");
         assertThat(response.address()).isEqualTo("New address");
@@ -110,74 +91,33 @@ class OwnerServiceTest {
     }
 
     @Test
-    @DisplayName("Passes the full Bearer token to the auth client unmodified")
-    void createOrUpdateProfile_shouldForwardFullTokenToAuthClient() {
-        when(authServiceClient.validateToken(BEARER_TOKEN)).thenReturn(validToken);
-        when(ownerRepo.findByUserId(USER_ID)).thenReturn(Optional.empty());
-        when(ownerRepo.save(any(OwnerProfile.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        ownerService.createOrUpdateProfile(BEARER_TOKEN, testRequest);
-
-        verify(authServiceClient, times(1)).validateToken(BEARER_TOKEN);
-    }
-
-    @Test
-    @DisplayName("Invalid token causes exception before repository is touched")
-    void createOrUpdateProfile_withInvalidToken_shouldThrowWithoutTouchingRepo() {
-        when(authServiceClient.validateToken(BEARER_TOKEN))
-                .thenThrow(new RuntimeException("Invalid token"));
-
-        assertThatThrownBy(() ->
-                ownerService.createOrUpdateProfile(BEARER_TOKEN, testRequest))
-                .isInstanceOf(RuntimeException.class);
-
-        verify(ownerRepo, never()).findByUserId(any());
-        verify(ownerRepo, never()).save(any());
-    }
-
-
-    @Test
-    @DisplayName("Returns profile correctly when it exists")
-    void getMyProfile_withExistingProfile_shouldReturnIt() {
+    @DisplayName("Should return owner profile data when profile exists for the user id")
+    void getMyProfile_WithExistingProfile_ShouldReturnProfileResponse() {
+        // Given
         OwnerProfile profile = OwnerProfile.builder()
                 .id(10L)
-                .userId(USER_ID)
+                .userId(TEST_USER_ID)
                 .phone("+56912345678")
-                .address("Av. Siempreviva 742")
+                .address("Av. Siempreviva 742, Linares")
                 .birthDate(LocalDate.of(1990, 5, 15))
                 .build();
 
-        when(authServiceClient.validateToken(BEARER_TOKEN)).thenReturn(validToken);
-        when(ownerRepo.findByUserId(USER_ID)).thenReturn(Optional.of(profile));
+        when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.of(profile));
 
-        OwnerResponse response = ownerService.getMyProfile(BEARER_TOKEN);
+        OwnerResponse response = ownerService.getMyProfile(TEST_USER_ID);
 
         assertThat(response.id()).isEqualTo(10L);
-        assertThat(response.userId()).isEqualTo(USER_ID);
+        assertThat(response.userId()).isEqualTo(TEST_USER_ID);
         assertThat(response.phone()).isEqualTo("+56912345678");
     }
 
     @Test
-    @DisplayName("Throws EntityNotFoundException when profile does not exist")
-    void getMyProfile_withNoProfile_shouldThrowEntityNotFoundException() {
-        when(authServiceClient.validateToken(BEARER_TOKEN)).thenReturn(validToken);
-        when(ownerRepo.findByUserId(USER_ID)).thenReturn(Optional.empty());
+    @DisplayName("Should throw EntityNotFoundException when getting profile for a user id with no profile record")
+    void getMyProfile_WithNoProfileRecord_ShouldThrowEntityNotFoundException() {
+        when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> ownerService.getMyProfile(BEARER_TOKEN))
+        assertThatThrownBy(() -> ownerService.getMyProfile(TEST_USER_ID))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessageContaining("Owner profile not found");
-    }
-
-    @Test
-    @DisplayName("Auth failure in getMyProfile prevents repository access")
-    void getMyProfile_withInvalidToken_shouldNotQueryRepository() {
-        when(authServiceClient.validateToken(BEARER_TOKEN))
-                .thenThrow(new RuntimeException("Auth service unavailable"));
-
-        assertThatThrownBy(() -> ownerService.getMyProfile(BEARER_TOKEN))
-                .isInstanceOf(RuntimeException.class);
-
-        verify(ownerRepo, never()).findByUserId(any());
     }
 }

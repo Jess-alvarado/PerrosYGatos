@@ -1,9 +1,7 @@
 package com.owner.pyg_owner.services;
 
-import com.owner.pyg_owner.clients.AuthServiceClient;
 import com.owner.pyg_owner.dto.requests.PetRequest;
 import com.owner.pyg_owner.dto.responses.PetResponse;
-import com.owner.pyg_owner.dto.responses.TokenValidationResponse;
 import com.owner.pyg_owner.models.OwnerProfile;
 import com.owner.pyg_owner.models.Pet;
 import com.owner.pyg_owner.models.PetType;
@@ -36,56 +34,41 @@ class PetServiceTest {
     @Mock
     private OwnerRepository ownerRepo;
 
-    @Mock
-    private AuthServiceClient authServiceClient;
-
     @InjectMocks
     private PetService petService;
 
-    private static final String BEARER_TOKEN = "Bearer eyJhbGciOiJIUzI1NiJ9.test.signature";
-    private static final Long USER_ID = 1L;
+    private static final Long TEST_USER_ID = 123L;
     private static final Long OWNER_PROFILE_ID = 10L;
     private static final Long PET_ID = 100L;
 
-    private TokenValidationResponse validToken;
     private OwnerProfile ownerProfile;
 
     @BeforeEach
     void setUp() {
-        validToken = TokenValidationResponse.builder()
-                .userId(USER_ID)
-                .username("ana.gonzalez")
-                .role("ROLE_OWNER")
-                .valid(true)
-                .expiresAt(System.currentTimeMillis() + 3600000L)
-                .build();
-
         ownerProfile = OwnerProfile.builder()
                 .id(OWNER_PROFILE_ID)
-                .userId(USER_ID)
+                .userId(TEST_USER_ID)
                 .phone("+56912345678")
-                .address("Av. Siempreviva 742")
+                .address("Av. Siempreviva 742, Linares")
                 .pets(new ArrayList<>())
                 .build();
     }
 
-
     @Test
-    @DisplayName("Adds a dog successfully and returns correct response")
-    void addPet_withValidDogRequest_shouldReturnPetResponse() {
+    @DisplayName("Should successfully add a new pet and return its response details")
+    void addPet_WithValidDogRequest_ShouldReturnPetResponse() {
         PetRequest request = new PetRequest(
                 "Rex", "DOG", "Labrador", 3, true, "Male", "Friendly"
         );
 
-        when(authServiceClient.validateToken(BEARER_TOKEN)).thenReturn(validToken);
-        when(ownerRepo.findByUserId(USER_ID)).thenReturn(Optional.of(ownerProfile));
+        when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.of(ownerProfile));
         when(petRepo.save(any(Pet.class))).thenAnswer(invocation -> {
             Pet p = invocation.getArgument(0);
             p.setId(PET_ID);
             return p;
         });
 
-        PetResponse response = petService.addPet(BEARER_TOKEN, request);
+        PetResponse response = petService.addPet(TEST_USER_ID, request);
 
         assertThat(response.id()).isEqualTo(PET_ID);
         assertThat(response.name()).isEqualTo("Rex");
@@ -99,53 +82,50 @@ class PetServiceTest {
     }
 
     @Test
-    @DisplayName("Accepts lowercase pet type and converts it correctly")
-    void addPet_withLowercaseType_shouldNormalizeToEnum() {
+    @DisplayName("Should normalize lowercase pet type input to correct uppercase enum string")
+    void addPet_WithLowercaseType_ShouldNormalizeToEnum() {
+        // Given
         PetRequest request = new PetRequest(
                 "Michi", "cat", "Siamese", 2, false, "Female", null
         );
 
-        when(authServiceClient.validateToken(BEARER_TOKEN)).thenReturn(validToken);
-        when(ownerRepo.findByUserId(USER_ID)).thenReturn(Optional.of(ownerProfile));
+        when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.of(ownerProfile));
         when(petRepo.save(any(Pet.class))).thenAnswer(invocation -> {
             Pet p = invocation.getArgument(0);
             p.setId(PET_ID);
             return p;
         });
 
-        PetResponse response = petService.addPet(BEARER_TOKEN, request);
+        PetResponse response = petService.addPet(TEST_USER_ID, request);
 
         assertThat(response.type()).isEqualTo("CAT");
     }
 
     @Test
-    @DisplayName("Throws IllegalArgumentException for invalid pet type")
-    void addPet_withInvalidType_shouldThrowIllegalArgumentException() {
-        // (2) — "BIRD" no existe en el enum PetType, valueOf() lanza esta excepción
+    @DisplayName("Should throw IllegalArgumentException when pet type does not exist in the system")
+    void addPet_WithInvalidType_ShouldThrowIllegalArgumentException() {
         PetRequest request = new PetRequest(
                 "Tweety", "BIRD", "Canary", 1, false, "Male", null
         );
 
-        when(authServiceClient.validateToken(BEARER_TOKEN)).thenReturn(validToken);
-        when(ownerRepo.findByUserId(USER_ID)).thenReturn(Optional.of(ownerProfile));
+        when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.of(ownerProfile));
 
-        assertThatThrownBy(() -> petService.addPet(BEARER_TOKEN, request))
+        assertThatThrownBy(() -> petService.addPet(TEST_USER_ID, request))
                 .isInstanceOf(IllegalArgumentException.class);
 
         verify(petRepo, never()).save(any());
     }
 
     @Test
-    @DisplayName("Throws EntityNotFoundException when owner profile does not exist")
-    void addPet_withNoOwnerProfile_shouldThrowEntityNotFoundException() {
+    @DisplayName("Should throw EntityNotFoundException when attempting to add a pet to a non-existent owner profile")
+    void addPet_WithNoOwnerProfile_ShouldThrowEntityNotFoundException() {
         PetRequest request = new PetRequest(
                 "Rex", "DOG", "Labrador", 3, true, "Male", null
         );
 
-        when(authServiceClient.validateToken(BEARER_TOKEN)).thenReturn(validToken);
-        when(ownerRepo.findByUserId(USER_ID)).thenReturn(Optional.empty());
+        when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> petService.addPet(BEARER_TOKEN, request))
+        assertThatThrownBy(() -> petService.addPet(TEST_USER_ID, request))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessageContaining("Owner profile not found");
 
@@ -153,27 +133,8 @@ class PetServiceTest {
     }
 
     @Test
-    @DisplayName("Invalid token prevents any repository access in addPet")
-    void addPet_withInvalidToken_shouldThrowWithoutTouchingRepositories() {
-        PetRequest request = new PetRequest(
-                "Rex", "DOG", "Labrador", 3, true, "Male", null
-        );
-
-        when(authServiceClient.validateToken(BEARER_TOKEN))
-                .thenThrow(new RuntimeException("Invalid token"));
-
-        assertThatThrownBy(() -> petService.addPet(BEARER_TOKEN, request))
-                .isInstanceOf(RuntimeException.class);
-
-        verify(ownerRepo, never()).findByUserId(any());
-        verify(petRepo, never()).save(any());
-    }
-
-
-    @Test
-    @DisplayName("Returns all pets for the authenticated owner")
-    void getPetsByOwner_withExistingPets_shouldReturnList() {
-        // (3) — construimos mascotas directamente en el perfil del owner
+    @DisplayName("Should return a list of pets linked to the authenticated user's owner profile")
+    void getPetsByOwner_WithExistingPets_ShouldReturnList() {
         Pet dog = Pet.builder()
                 .id(101L).name("Rex").type(PetType.DOG)
                 .breed("Labrador").age(3).sterilized(true)
@@ -187,10 +148,9 @@ class PetServiceTest {
         ownerProfile.getPets().add(dog);
         ownerProfile.getPets().add(cat);
 
-        when(authServiceClient.validateToken(BEARER_TOKEN)).thenReturn(validToken);
-        when(ownerRepo.findByUserId(USER_ID)).thenReturn(Optional.of(ownerProfile));
+        when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.of(ownerProfile));
 
-        List<PetResponse> responses = petService.getPetsByOwner(BEARER_TOKEN);
+        List<PetResponse> responses = petService.getPetsByOwner(TEST_USER_ID);
 
         assertThat(responses).hasSize(2);
         assertThat(responses.get(0).name()).isEqualTo("Rex");
@@ -200,41 +160,37 @@ class PetServiceTest {
     }
 
     @Test
-    @DisplayName("Returns empty list when owner has no pets")
-    void getPetsByOwner_withNoPets_shouldReturnEmptyList() {
-        when(authServiceClient.validateToken(BEARER_TOKEN)).thenReturn(validToken);
-        when(ownerRepo.findByUserId(USER_ID)).thenReturn(Optional.of(ownerProfile));
+    @DisplayName("Should return an empty list when owner has no registered pets")
+    void getPetsByOwner_WithNoPets_ShouldReturnEmptyList() {
+        when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.of(ownerProfile));
 
-        List<PetResponse> responses = petService.getPetsByOwner(BEARER_TOKEN);
+        List<PetResponse> responses = petService.getPetsByOwner(TEST_USER_ID);
 
         assertThat(responses).isEmpty();
-        verify(petRepo, never()).save(any());
+        verifyNoInteractions(petRepo);
     }
 
     @Test
-    @DisplayName("Throws EntityNotFoundException when owner has no profile in getPetsByOwner")
-    void getPetsByOwner_withNoOwnerProfile_shouldThrowEntityNotFoundException() {
-        when(authServiceClient.validateToken(BEARER_TOKEN)).thenReturn(validToken);
-        when(ownerRepo.findByUserId(USER_ID)).thenReturn(Optional.empty());
+    @DisplayName("Should throw EntityNotFoundException when querying pets for a user with no profile record")
+    void getPetsByOwner_WithNoOwnerProfile_ShouldThrowEntityNotFoundException() {
+        when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> petService.getPetsByOwner(BEARER_TOKEN))
+        assertThatThrownBy(() -> petService.getPetsByOwner(TEST_USER_ID))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessageContaining("Owner profile not found");
     }
 
-
     @Test
-    @DisplayName("Returns specific pet when it belongs to the authenticated owner")
-    void getPetById_withValidOwnerAndPet_shouldReturnPetResponse() {
+    @DisplayName("Should return pet data when pet exists and belongs to the owner")
+    void getPetById_WithValidOwnerAndPet_ShouldReturnPetResponse() {
         Pet pet = Pet.builder()
                 .id(PET_ID).name("Rex").type(PetType.DOG)
                 .breed("Labrador").age(3).sterilized(true)
                 .sex("Male").behaviorDescription("Friendly").build();
 
-        when(authServiceClient.validateToken(BEARER_TOKEN)).thenReturn(validToken);
-        when(petRepo.findByIdAndOwnerUserId(PET_ID, USER_ID)).thenReturn(Optional.of(pet));
+        when(petRepo.findByIdAndOwnerUserId(PET_ID, TEST_USER_ID)).thenReturn(Optional.of(pet));
 
-        PetResponse response = petService.getPetById(BEARER_TOKEN, PET_ID);
+        PetResponse response = petService.getPetById(TEST_USER_ID, PET_ID);
 
         assertThat(response.id()).isEqualTo(PET_ID);
         assertThat(response.name()).isEqualTo("Rex");
@@ -242,27 +198,12 @@ class PetServiceTest {
     }
 
     @Test
-    @DisplayName("Throws EntityNotFoundException when pet does not belong to owner")
-    void getPetById_withPetFromAnotherOwner_shouldThrowEntityNotFoundException() {
-        // (4) — findByIdAndOwnerUserId ya filtra por userId, así que si la mascota
-        // es de otro dueño simplemente retorna empty
-        when(authServiceClient.validateToken(BEARER_TOKEN)).thenReturn(validToken);
-        when(petRepo.findByIdAndOwnerUserId(PET_ID, USER_ID)).thenReturn(Optional.empty());
+    @DisplayName("Should throw EntityNotFoundException when pet id is missing or does not match owner user id")
+    void getPetById_WithPetFromAnotherOwner_ShouldThrowEntityNotFoundException() {
+        when(petRepo.findByIdAndOwnerUserId(PET_ID, TEST_USER_ID)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> petService.getPetById(BEARER_TOKEN, PET_ID))
+        assertThatThrownBy(() -> petService.getPetById(TEST_USER_ID, PET_ID))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessageContaining("Pet not found");
-    }
-
-    @Test
-    @DisplayName("Invalid token prevents pet lookup in getPetById")
-    void getPetById_withInvalidToken_shouldThrowWithoutTouchingRepository() {
-        when(authServiceClient.validateToken(BEARER_TOKEN))
-                .thenThrow(new RuntimeException("Invalid token"));
-
-        assertThatThrownBy(() -> petService.getPetById(BEARER_TOKEN, PET_ID))
-                .isInstanceOf(RuntimeException.class);
-
-        verify(petRepo, never()).findByIdAndOwnerUserId(any(), any());
     }
 }

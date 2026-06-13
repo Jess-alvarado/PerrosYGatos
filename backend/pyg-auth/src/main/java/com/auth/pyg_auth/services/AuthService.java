@@ -15,89 +15,96 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import java.util.Date;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final JwtService jwtService;
+    private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenService refreshTokenService;
+    private final AuthenticationManager authenticationManager;
+    private final AccessTokenBlacklistService accessTokenBlacklistService;
 
-        private final UserRepository userRepository;
-        private final RoleRepository roleRepository;
-        private final JwtService jwtService;
-        private final PasswordEncoder passwordEncoder;
-        private final AuthenticationManager authenticationManager;
-        private final RefreshTokenService refreshTokenService;
-        private final AccessTokenBlacklistService accessTokenBlacklistService;
+    public AuthResponse login(LoginRequest request) {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+        );
 
-        public AuthResponse login(LoginRequest request) {
-                authenticationManager.authenticate(
-                        new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
-                );
+        User user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-                User user = userRepository.findByUsername(request.getUsername())
-                        .orElseThrow(() -> new RuntimeException("User not found"));
+        String accessToken = jwtService.generateAccessToken(user);
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
 
-                String accessToken = jwtService.generateAccessToken(user);
-                RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken.getToken())
+                .tokenType("Bearer")
+                .build();
+    }
 
-                return AuthResponse.builder()
-                        .accessToken(accessToken)
-                        .refreshToken(refreshToken.getToken())
-                        .tokenType("Bearer")
-                        .build();
-        }
+    @Transactional
+    public AuthResponse register(UserRegisterRequest request) {
+        Role role = roleRepository.findByName(request.getRolename())
+                .orElseThrow(() -> new RuntimeException("Role not found: " + request.getRolename()));
 
-        @Transactional
-        public AuthResponse register(UserRegisterRequest request) {
-                Role role = roleRepository.findByName(request.getRolename())
-                        .orElseThrow(() -> new RuntimeException("Role not found: " + request.getRolename()));
+        User user = User.builder()
+                .username(request.getUsername())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .firstname(request.getFirstname())
+                .lastname(request.getLastname())
+                .role(role)
+                .build();
 
-                User user = User.builder()
-                        .username(request.getUsername())
-                        .password(passwordEncoder.encode(request.getPassword()))
-                        .firstname(request.getFirstname())
-                        .lastname(request.getLastname())
-                        .role(role)
-                        .build();
+        User savedUser = userRepository.save(user);
 
-                User savedUser = userRepository.save(user);
+        String accessToken = jwtService.generateAccessToken(savedUser);
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(savedUser);
 
-                String accessToken = jwtService.generateAccessToken(savedUser);
-                RefreshToken refreshToken = refreshTokenService.createRefreshToken(savedUser);
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken.getToken())
+                .tokenType("Bearer")
+                .build();
+    }
 
-                return AuthResponse.builder()
-                        .accessToken(accessToken)
-                        .refreshToken(refreshToken.getToken())
-                        .tokenType("Bearer")
-                        .build();
-        }
+    @Transactional
+    public AuthResponse refresh(RefreshTokenRequest request) {
+        RefreshToken currentRefreshToken = refreshTokenService.validateRefreshToken(request.getRefreshToken());
 
-        @Transactional
-        public AuthResponse refresh(RefreshTokenRequest request) {
-                RefreshToken currentRefreshToken = refreshTokenService.validateRefreshToken(request.getRefreshToken());
+        User user = currentRefreshToken.getUser();
 
-                User user = currentRefreshToken.getUser();
+        refreshTokenService.revokeToken(currentRefreshToken.getToken());
 
-                refreshTokenService.revokeToken(currentRefreshToken.getToken());
+        String newAccessToken = jwtService.generateAccessToken(user);
+        RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user);
 
-                String newAccessToken = jwtService.generateAccessToken(user);
-                RefreshToken newRefreshToken = refreshTokenService.createRefreshToken(user);
+        return AuthResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken.getToken())
+                .tokenType("Bearer")
+                .build();
+    }
 
-                return AuthResponse.builder()
-                        .accessToken(newAccessToken)
-                        .refreshToken(newRefreshToken.getToken())
-                        .tokenType("Bearer")
-                        .build();
-        }
+    @Transactional
+    public void logout(String accessToken) {
+        Long userId = jwtService.getUserIdFromToken(accessToken);
 
-        @Transactional
-        public void logout(String accessToken) {
-                Long userId = jwtService.getUserIdFromToken(accessToken);
 
-                accessTokenBlacklistService.blacklistToken(
-                        accessToken,
-                        jwtService.getExpirationDateFromToken(accessToken)
-                );
 
-                refreshTokenService.revokeAllUserTokens(userId);
-        }
+        String jti = jwtService.getJtiFromToken(accessToken);
+
+        Date expiration = jwtService.getExpirationDateFromToken(accessToken);
+
+        long ttlMillis = expiration.getTime() - System.currentTimeMillis();
+
+
+
+        accessTokenBlacklistService.blacklist(jti, ttlMillis);
+
+        refreshTokenService.revokeAllUserTokens(userId);
+    }
 }

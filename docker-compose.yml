@@ -42,6 +42,8 @@ services:
     depends_on:
       postgres:
         condition: service_started
+      redis:
+        condition: service_healthy
 
   pyg-owner:
     build:
@@ -113,6 +115,8 @@ services:
     build:
       context: ./backend/pyg-gateway
     container_name: pyg-gateway
+    env_file:
+      - .env
     environment:
       - SERVER_PORT=${SERVER_PORT_GATEWAY}
       - AUTH_SERVICE_URL=http://pyg-auth:${SERVER_PORT_AUTH}
@@ -125,6 +129,7 @@ services:
       - pyg-auth
       - pyg-owner
       - pyg-professional
+      - redis
 
   pyg-frontend:
     build:
@@ -136,6 +141,17 @@ services:
     - "80:80"
     depends_on:
     - pyg-gateway
+
+  redis:
+    image: redis:7-alpine
+    container_name: pyg-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
 volumes:
   pgdata:
