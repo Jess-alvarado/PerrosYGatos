@@ -8,57 +8,47 @@ import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import jakarta.servlet.ServletException;
-
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@ActiveProfiles("test")
+@WebMvcTest(controllers = PetController.class)
+@AutoConfigureMockMvc(addFilters = false)
 class PetControllerTest {
 
+    @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
     private ObjectMapper objectMapper;
 
-    @Mock
+    @MockitoBean
     private PetService petService;
 
-    @InjectMocks
-    private PetController petController;
+    @MockitoBean
+    private JpaMetamodelMappingContext jpaMetamodelMappingContext;
 
-    private static final String BEARER_TOKEN =
-            "Bearer eyJhbGciOiJIUzI1NiJ9.test.signature";
-
+    private static final Long TEST_USER_ID = 123L;
     private PetResponse petResponse;
 
     @BeforeEach
     void setUp() {
-
-        MockitoAnnotations.openMocks(this);
-
-        mockMvc = MockMvcBuilders
-                .standaloneSetup(petController)
-                .build();
-
-        objectMapper = new ObjectMapper();
-
         petResponse = new PetResponse(
                 1L,
                 "Milo",
@@ -72,9 +62,8 @@ class PetControllerTest {
     }
 
     @Test
-    @DisplayName("Add pet returns 200 with pet response")
-    void addPet_withValidRequest_shouldReturn200() throws Exception {
-
+    @DisplayName("Should return 200 OK with pet details when adding a new pet with a valid request")
+    void addPet_WithValidRequest_ShouldReturn200() throws Exception {
         PetRequest request = new PetRequest(
                 "Milo",
                 "DOG",
@@ -85,11 +74,11 @@ class PetControllerTest {
                 "Friendly and energetic"
         );
 
-        when(petService.addPet(eq(BEARER_TOKEN), any(PetRequest.class)))
+        Mockito.when(petService.addPet(eq(TEST_USER_ID), any(PetRequest.class)))
                 .thenReturn(petResponse);
 
         mockMvc.perform(post("/pets")
-                        .header("Authorization", BEARER_TOKEN)
+                        .header("X-User-Id", TEST_USER_ID)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -98,42 +87,38 @@ class PetControllerTest {
     }
 
     @Test
-    @DisplayName("Get pets by owner returns 200")
-    void getPetsByOwner_shouldReturn200() throws Exception {
-
-        when(petService.getPetsByOwner(BEARER_TOKEN))
+    @DisplayName("Should return 200 OK with pet list for the authenticated owner")
+    void getPetsByOwner_ShouldReturn200() throws Exception {
+        Mockito.when(petService.getPetsByOwner(TEST_USER_ID))
                 .thenReturn(List.of(petResponse));
 
         mockMvc.perform(get("/pets")
-                        .header("Authorization", BEARER_TOKEN))
+                        .header("X-User-Id", TEST_USER_ID))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Milo"));
     }
 
     @Test
-    @DisplayName("Get pet by id returns 200")
-    void getPetById_shouldReturn200() throws Exception {
-
-        when(petService.getPetById(BEARER_TOKEN, 1L))
+    @DisplayName("Should return 200 OK with pet details when getting a valid pet by ID")
+    void getPetById_ShouldReturn200() throws Exception {
+        Mockito.when(petService.getPetById(TEST_USER_ID, 1L))
                 .thenReturn(petResponse);
 
         mockMvc.perform(get("/pets/1")
-                        .header("Authorization", BEARER_TOKEN))
+                        .header("X-User-Id", TEST_USER_ID))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Milo"));
     }
 
     @Test
-    @DisplayName("Get pet by id returns 500 when pet not found")
-    void getPetById_whenPetNotFound_shouldReturn500() throws Exception {
-        when(petService.getPetById(any(), any()))
-                .thenThrow(new EntityNotFoundException("Pet not found"));
+    @DisplayName("Should throw EntityNotFoundException when pet is not found")
+    void getPetById_WhenPetNotFound_ShouldThrowException() throws Exception {
+        Mockito.when(petService.getPetById(any(Long.class), any(Long.class)))
+                .thenThrow(new jakarta.persistence.EntityNotFoundException("Pet not found"));
 
-        ServletException exception = assertThrows(ServletException.class, () -> {
-            mockMvc.perform(get("/pets/999")
-                    .header("Authorization", BEARER_TOKEN));
-        });
-        assertTrue(exception.getCause() instanceof EntityNotFoundException);
-        assertTrue(exception.getCause().getMessage().contains("Pet not found"));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+                mockMvc.perform(get("/pets/999")
+                        .header("X-User-Id", TEST_USER_ID))
+        ).hasCauseInstanceOf(jakarta.persistence.EntityNotFoundException.class);
     }
 }

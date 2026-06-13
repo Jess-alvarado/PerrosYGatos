@@ -11,9 +11,9 @@ import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 @Documented
-@Target({ FIELD })              // Se puede usar en campos (incluye componentes de records)
-@Retention(RUNTIME)             // La anotación está disponible en tiempo de ejecución
-@Constraint(validatedBy = PetTypeValidator.class)  // Se validará con esta clase
+@Target({ FIELD })
+@Retention(RUNTIME)
+@Constraint(validatedBy = PetTypeValidator.class)
 public @interface ValidPetType {
 
     String message() default "Invalid pet type. Allowed values: DOG, CAT.";

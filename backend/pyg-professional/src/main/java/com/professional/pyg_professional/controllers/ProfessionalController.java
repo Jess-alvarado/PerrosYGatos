@@ -1,27 +1,26 @@
 package com.professional.pyg_professional.controllers;
 
 import java.util.List;
-
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.professional.pyg_professional.dto.requests.ProfessionalRequest;
+import com.professional.pyg_professional.dto.requests.ProfessionalUpdateRequest;
+import com.professional.pyg_professional.dto.responses.ProfessionalResponse;
+import com.professional.pyg_professional.services.ProfessionalService;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-
-import com.professional.pyg_professional.dto.requests.ProfessionalRequest;
-import com.professional.pyg_professional.dto.requests.ProfessionalUpdateRequest;
-import com.professional.pyg_professional.dto.responses.ProfessionalResponse;
-import com.professional.pyg_professional.services.ProfessionalService;
 
 @RestController
 @RequestMapping("/professionals")
@@ -32,72 +31,69 @@ public class ProfessionalController {
 
         private final ProfessionalService professionalService;
 
-        @Operation(summary = "Create professional profile", description = "Creates the profile for the authenticated user with the PROFESSIONAL role")
+        @Operation(summary = "Create professional profile", description = "Creates a new professional profile linked to the authenticated user")
         @ApiResponses({
-                        @ApiResponse(responseCode = "201", description = "Professional profile created successfully", content = @Content(schema = @Schema(implementation = ProfessionalResponse.class))),
-                        @ApiResponse(responseCode = "401", description = "Invalid or expired token"),
-                        @ApiResponse(responseCode = "403", description = "User is not allowed to create a professional profile"),
-                        @ApiResponse(responseCode = "409", description = "Professional profile already exists")
+                @ApiResponse(responseCode = "201", description = "Professional profile created successfully", content = @Content(schema = @Schema(implementation = ProfessionalResponse.class))),
+                @ApiResponse(responseCode = "400", description = "Invalid request data"),
+                @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or expired JWT token"),
+                @ApiResponse(responseCode = "409", description = "Conflict - Profile already exists for this user")
         })
         @PostMapping("/profile")
         public ResponseEntity<ProfessionalResponse> createProfile(
-                        @Parameter(hidden = true) @RequestHeader("Authorization") String authorization,
-                        @Valid @RequestBody ProfessionalRequest request) {
+                @Parameter(hidden = true) @RequestHeader("X-User-Id") Long userId,
+                @Valid @RequestBody ProfessionalRequest request) {
 
-                ProfessionalResponse response = professionalService.createProfile(authorization, request);
-                return ResponseEntity.status(HttpStatus.CREATED).body(response);
+                return ResponseEntity.status(HttpStatus.CREATED)
+                        .body(professionalService.createProfile(userId, request));
         }
 
-        @Operation(summary = "Get my professional profile", description = "Returns the professional profile of the authenticated user with the PROFESSIONAL role")
+        @Operation(summary = "Get current professional profile", description = "Returns the professional profile associated with the authenticated user")
         @ApiResponses({
-                        @ApiResponse(responseCode = "200", description = "Professional profile retrieved successfully", content = @Content(schema = @Schema(implementation = ProfessionalResponse.class))),
-                        @ApiResponse(responseCode = "401", description = "Invalid or expired token"),
-                        @ApiResponse(responseCode = "403", description = "User is not allowed to view this profile"),
-                        @ApiResponse(responseCode = "404", description = "Professional profile not found")
+                @ApiResponse(responseCode = "200", description = "Professional profile retrieved successfully", content = @Content(schema = @Schema(implementation = ProfessionalResponse.class))),
+                @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or expired JWT token"),
+                @ApiResponse(responseCode = "404", description = "Professional profile not found")
         })
         @GetMapping("/profile")
         public ResponseEntity<ProfessionalResponse> getMyProfile(
-                        @Parameter(hidden = true) @RequestHeader("Authorization") String authorization) {
-                return ResponseEntity.ok(professionalService.getMyProfile(authorization));
+                @Parameter(hidden = true) @RequestHeader("X-User-Id") Long userId) {
+
+                return ResponseEntity.ok(professionalService.getMyProfile(userId));
         }
 
-        @Operation(summary = "Update my professional profile", description = "Partially updates the professional profile of the authenticated user with the PROFESSIONAL role")
+        @Operation(summary = "Update current professional profile", description = "Partially updates the professional profile fields for the authenticated user")
         @ApiResponses({
-                        @ApiResponse(responseCode = "200", description = "Professional profile updated successfully", content = @Content(schema = @Schema(implementation = ProfessionalResponse.class))),
-                        @ApiResponse(responseCode = "401", description = "Invalid or expired token"),
-                        @ApiResponse(responseCode = "403", description = "User is not allowed to update this profile"),
-                        @ApiResponse(responseCode = "404", description = "Professional profile not found")
+                @ApiResponse(responseCode = "200", description = "Professional profile updated successfully", content = @Content(schema = @Schema(implementation = ProfessionalResponse.class))),
+                @ApiResponse(responseCode = "400", description = "Invalid request data"),
+                @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or expired JWT token"),
+                @ApiResponse(responseCode = "404", description = "Professional profile not found")
         })
         @PatchMapping("/profile")
         public ResponseEntity<ProfessionalResponse> updateMyProfile(
-                        @Parameter(hidden = true) @RequestHeader("Authorization") String authorization,
-                        @Valid @RequestBody ProfessionalUpdateRequest request) {
-                return ResponseEntity.ok(professionalService.updateMyProfile(authorization, request));
+                @Parameter(hidden = true) @RequestHeader("X-User-Id") Long userId,
+                @Valid @RequestBody ProfessionalUpdateRequest request) {
+
+                return ResponseEntity.ok(professionalService.updateMyProfile(userId, request));
         }
 
-        @Operation(summary = "List all professional profiles", description = "Returns all professional profiles. Available for OWNER and PROFESSIONAL roles")
+        @Operation(summary = "List all professional profiles", description = "Returns a list of all registered professional profiles in the system. Accessible by owners and professionals.")
         @ApiResponses({
-                        @ApiResponse(responseCode = "200", description = "Professional profiles retrieved successfully"),
-                        @ApiResponse(responseCode = "401", description = "Invalid or expired token"),
-                        @ApiResponse(responseCode = "403", description = "User is not allowed to list professional profiles")
+                @ApiResponse(responseCode = "200", description = "List of professionals retrieved successfully", content = @Content(array = @ArraySchema(schema = @Schema(implementation = ProfessionalResponse.class)))),
+                @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or expired JWT token")
         })
         @GetMapping
-        public ResponseEntity<List<ProfessionalResponse>> getAllProfessionals(
-                        @Parameter(hidden = true) @RequestHeader("Authorization") String authorization) {
-                return ResponseEntity.ok(professionalService.getAllProfessionals(authorization));
+        public ResponseEntity<List<ProfessionalResponse>> getAllProfessionals() {
+                return ResponseEntity.ok(professionalService.getAllProfessionals());
         }
 
-        @Operation(summary = "Get professional profile by ID", description = "Returns a professional profile by its ID. Available for OWNER and PROFESSIONAL roles")
+        @Operation(summary = "Get professional profile by ID", description = "Returns a specific professional profile based on its unique ID database record")
         @ApiResponses({
-                        @ApiResponse(responseCode = "200", description = "Professional profile retrieved successfully", content = @Content(schema = @Schema(implementation = ProfessionalResponse.class))),
-                        @ApiResponse(responseCode = "401", description = "Invalid or expired token"),
-                        @ApiResponse(responseCode = "403", description = "User is not allowed to view this profile"),
-                        @ApiResponse(responseCode = "404", description = "Professional profile not found")
+                @ApiResponse(responseCode = "200", description = "Professional profile retrieved successfully", content = @Content(schema = @Schema(implementation = ProfessionalResponse.class))),
+                @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or expired JWT token"),
+                @ApiResponse(responseCode = "404", description = "Professional profile not found")
         })
         @GetMapping("/{id}")
         public ResponseEntity<ProfessionalResponse> getProfessionalById(
-                        @Parameter(hidden = true) @RequestHeader("Authorization") String authorization,
-                        @PathVariable Long id) {
-                return ResponseEntity.ok(professionalService.getProfessionalById(authorization, id));
+                @Parameter(description = "Professional Profile ID", example = "1", required = true) @PathVariable Long id) {
+                return ResponseEntity.ok(professionalService.getProfessionalById(id));
         }
 }

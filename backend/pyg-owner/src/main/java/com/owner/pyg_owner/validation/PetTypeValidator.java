@@ -8,17 +8,15 @@ public class PetTypeValidator implements ConstraintValidator<ValidPetType, Strin
 
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
-        // Si es null o vacío, dejamos que @NotBlank se encargue
-        // Retornamos true aquí para evitar mensajes de error duplicados
         if (value == null || value.isBlank()) {
             return true;
         }
 
         try {
             PetType.valueOf(value.toUpperCase());
-            return true; // Es un valor válido del enum
+            return true;
         } catch (IllegalArgumentException ex) {
-            return false; // No existe en el enum → inválido
+            return false;
         }
     }
 }

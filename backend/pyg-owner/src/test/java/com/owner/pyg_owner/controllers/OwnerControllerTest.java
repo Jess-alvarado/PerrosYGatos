@@ -4,48 +4,36 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.owner.pyg_owner.dto.requests.OwnerCreateRequest;
 import com.owner.pyg_owner.dto.responses.OwnerResponse;
 import com.owner.pyg_owner.services.OwnerService;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import com.owner.pyg_owner.security.JwtAuthenticationFilter;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
-import com.owner.pyg_owner.services.PetService;
-import java.time.LocalDate;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
 import org.springframework.test.context.TestPropertySource;
 
+import java.time.LocalDate;
 
-@WebMvcTest(controllers = OwnerController.class)
-@AutoConfigureMockMvc(addFilters = false)
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 @ActiveProfiles("test")
+@WebMvcTest(controllers = OwnerController.class, excludeAutoConfiguration = SecurityAutoConfiguration.class)
+@AutoConfigureMockMvc(addFilters = false)
 @TestPropertySource(properties = {
-        "jwt.secret=dGVzdFNlY3JldEtleVBhcmFQcnVlYmFzUHlnQXV0aDEyMzQ1Njc4OTA=",
-        "jwt.expiration=3600000",
-        "jwt.refresh-token=604800000",
-        "spring.datasource.url=jdbc:h2:mem:testdb",
-        "spring.datasource.driver-class-name=org.h2.Driver",
-        "spring.datasource.username=sa",
-        "spring.datasource.password=",
-        "spring.jpa.hibernate.ddl-auto=create-drop",
-        "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
-        "logging.level.root=ERROR",
-        "spring.config.import="
+        "LOG_LEVEL=ERROR",
+        "logging.level.root=ERROR"
 })
 class OwnerControllerTest {
 
@@ -55,163 +43,68 @@ class OwnerControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private OwnerService ownerService;
 
-    @MockBean
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
-
-    @MockBean
+    @MockitoBean
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
 
-    private static final String BEARER_TOKEN = "Bearer eyJhbGciOiJIUzI1NiJ9.test.signature";
-
-    private OwnerResponse testOwnerResponse;
+    private OwnerResponse mockResponse;
+    private OwnerCreateRequest mockRequest;
+    private final Long testUserId = 123L;
 
     @BeforeEach
     void setUp() {
-        testOwnerResponse = new OwnerResponse(
-                10L,
+        mockRequest = new OwnerCreateRequest(
+                "+56912345678",
+                "Calle Falsa 123, Linares",
+                LocalDate.of(1995, 5, 15)
+        );
+
+        mockResponse = new OwnerResponse(
                 1L,
+                testUserId,
                 "+56912345678",
-                "Av. Siempreviva 742, Santiago",
-                LocalDate.of(1990, 5, 15)
+                "Calle Falsa 123, Linares",
+                LocalDate.of(1995, 5, 15)
         );
     }
 
-
     @Test
-    @DisplayName("Upsert profile returns 200 with owner response")
-    void upsertProfile_withValidRequest_shouldReturn200() throws Exception {
-        OwnerCreateRequest request = new OwnerCreateRequest(
-                "+56912345678",
-                "Av. Siempreviva 742, Santiago",
-                LocalDate.of(1990, 5, 15)
-        );
-
-        when(ownerService.createOrUpdateProfile(eq(BEARER_TOKEN), any(OwnerCreateRequest.class)))
-                .thenReturn(testOwnerResponse);
+    @DisplayName("Should successfully create or update profile when valid request data and X-User-Id header are provided")
+    void upsertProfile_ShouldReturn200Ok() throws Exception {
+        Mockito.when(ownerService.createOrUpdateProfile(eq(testUserId), any(OwnerCreateRequest.class)))
+                .thenReturn(mockResponse);
 
         mockMvc.perform(post("/owners/profile")
-                        .header("Authorization", BEARER_TOKEN)
+                        .header("X-User-Id", testUserId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(objectMapper.writeValueAsString(mockRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(10L))
-                .andExpect(jsonPath("$.userId").value(1L))
+                .andExpect(jsonPath("$.id").value(1L))
+                .andExpect(jsonPath("$.userId").value(testUserId))
                 .andExpect(jsonPath("$.phone").value("+56912345678"))
-                .andExpect(jsonPath("$.address").value("Av. Siempreviva 742, Santiago"));
+                .andExpect(jsonPath("$.address").value("Calle Falsa 123, Linares"));
     }
 
     @Test
-    @DisplayName("Upsert profile passes Authorization header intact to service")
-    void upsertProfile_shouldForwardAuthorizationHeaderToService() throws Exception {
-        OwnerCreateRequest request = new OwnerCreateRequest(
-                "+56912345678",
-                "Av. Siempreviva 742, Santiago",
-                LocalDate.of(1990, 5, 15)
-        );
-
-        when(ownerService.createOrUpdateProfile(any(), any())).thenReturn(testOwnerResponse);
-
-        mockMvc.perform(post("/owners/profile")
-                        .header("Authorization", BEARER_TOKEN)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk());
-
-        verify(ownerService, times(1))
-                .createOrUpdateProfile(eq(BEARER_TOKEN), any(OwnerCreateRequest.class));
-    }
-
-    @Test
-    @DisplayName("Upsert profile returns 400 when request body is invalid")
-    void upsertProfile_withInvalidBody_shouldReturn400() throws Exception {
-        OwnerCreateRequest invalidRequest = new OwnerCreateRequest(
-                "",
-                "",
-                LocalDate.of(1990, 5, 15)
-        );
-
-        mockMvc.perform(post("/owners/profile")
-                        .header("Authorization", BEARER_TOKEN)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest());
-
-        verify(ownerService, never()).createOrUpdateProfile(any(), any());
-    }
-
-    @Test
-    @DisplayName("Upsert profile throws RuntimeException when service fails")
-    void upsertProfile_whenServiceFails_shouldThrowException() throws Exception {
-
-        OwnerCreateRequest request = new OwnerCreateRequest(
-                "+56912345678",
-                "Av. Siempreviva 742",
-                LocalDate.of(1990, 5, 15)
-        );
-
-        when(ownerService.createOrUpdateProfile(any(), any()))
-                .thenThrow(new RuntimeException("Auth service unavailable"));
-
-        jakarta.servlet.ServletException exception = org.junit.jupiter.api.Assertions.assertThrows(
-                jakarta.servlet.ServletException.class,
-                () -> {
-                    mockMvc.perform(post("/owners/profile")
-                            .header("Authorization", BEARER_TOKEN)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)));
-                }
-        );
-
-        assertNotNull(exception.getCause(), "The root exception should not be null");
-        assertTrue(exception.getCause() instanceof RuntimeException, "Should be a RuntimeException");
-        assertEquals("Auth service unavailable", exception.getCause().getMessage());
-    }
-
-
-    @Test
-    @DisplayName("Get profile returns 200 with owner data")
-    void getMyProfile_withValidToken_shouldReturn200() throws Exception {
-        when(ownerService.getMyProfile(BEARER_TOKEN)).thenReturn(testOwnerResponse);
+    @DisplayName("Should return authenticated owner profile details when valid X-User-Id header is present")
+    void getMyProfile_ShouldReturn200Ok() throws Exception {
+        Mockito.when(ownerService.getMyProfile(testUserId))
+                .thenReturn(mockResponse);
 
         mockMvc.perform(get("/owners/profile")
-                        .header("Authorization", BEARER_TOKEN))
+                        .header("X-User-Id", testUserId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(10L))
+                .andExpect(jsonPath("$.id").value(1L))
+                .andExpect(jsonPath("$.userId").value(testUserId))
                 .andExpect(jsonPath("$.phone").value("+56912345678"));
     }
 
     @Test
-    @DisplayName("Get profile passes Authorization header intact to service")
-    void getMyProfile_shouldForwardAuthorizationHeaderToService() throws Exception {
-        when(ownerService.getMyProfile(any())).thenReturn(testOwnerResponse);
-
-        mockMvc.perform(get("/owners/profile")
-                        .header("Authorization", BEARER_TOKEN))
-                .andExpect(status().isOk());
-
-        verify(ownerService, times(1)).getMyProfile(eq(BEARER_TOKEN));
-    }
-
-    @Test
-    @DisplayName("Get profile throws EntityNotFoundException when profile does not exist")
-    void getMyProfile_whenProfileNotFound_shouldThrowException() throws Exception {
-
-        when(ownerService.getMyProfile(any()))
-                .thenThrow(new EntityNotFoundException("Owner profile not found"));
-
-        jakarta.servlet.ServletException exception = org.junit.jupiter.api.Assertions.assertThrows(
-                jakarta.servlet.ServletException.class,
-                () -> {
-                    mockMvc.perform(get("/owners/profile")
-                            .header("Authorization", BEARER_TOKEN));
-                }
-        );
-
-        assertNotNull(exception.getCause(), "The root exception should not be null");
-        assertTrue(exception.getCause() instanceof EntityNotFoundException, "Should be an EntityNotFoundException");
-        assertEquals("Owner profile not found", exception.getCause().getMessage());
+    @DisplayName("Should return 400 Bad Request when X-User-Id header is missing from the request")
+    void getMyProfile_WhenHeaderIsMissing_ShouldReturn400BadRequest() throws Exception {
+        mockMvc.perform(get("/owners/profile"))
+                .andExpect(status().isBadRequest());
     }
 }

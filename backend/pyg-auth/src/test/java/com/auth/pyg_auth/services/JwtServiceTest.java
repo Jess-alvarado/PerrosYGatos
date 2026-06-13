@@ -3,6 +3,7 @@ package com.auth.pyg_auth.services;
 import com.auth.pyg_auth.models.Role;
 import com.auth.pyg_auth.models.User;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,129 +23,135 @@ class JwtServiceTest {
     @InjectMocks
     private JwtService jwtService;
 
-    private User usuarioPrueba;
+    private User mockUser;
 
     private static final String SECRET_TEST = "dGVzdFNlY3JldEtleVBhcmFQcnVlYmFzUHlnQXV0aDEyMzQ1Njc4OTA=";
-    private static final Long EXPIRACION_MS = 3600000L;
+    private static final Long EXPIRATION_MS = 3600000L; // 1 h
 
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(jwtService, "secretKey", SECRET_TEST);
-        ReflectionTestUtils.setField(jwtService, "jwtExpirationMs", EXPIRACION_MS);
+        ReflectionTestUtils.setField(jwtService, "jwtExpirationMs", EXPIRATION_MS);
 
-        Role rol = new Role();
-        rol.setName("ROLE_OWNER");
+        Role role = new Role();
+        role.setName("ROLE_OWNER");
 
-        usuarioPrueba = User.builder()
+        mockUser = User.builder()
                 .id(1L)
-                .username("ana@perrosgatos.cl")
-                .password("password_encriptado")
-                .firstname("Ana")
-                .lastname("González")
-                .role(rol)
+                .username("jess@perrosygatos.cl")
+                .password("encoded_password")
+                .firstname("Jess")
+                .lastname("Alvarado")
+                .role(role)
                 .build();
     }
 
     @Test
-    @DisplayName("Should generate token with all correct claims")
-    void generateAccessToken_debeContenerClaimsCorrectas() {
-        String token = jwtService.generateAccessToken(usuarioPrueba);
-
+    @DisplayName("Should generate token with all correct custom and standard claims")
+    void generateAccessToken_shouldContainCorrectClaims() {
+        String token = jwtService.generateAccessToken(mockUser);
         Claims claims = jwtService.getAllClaims(token);
 
-        assertThat(claims.getSubject()).isEqualTo("ana@perrosgatos.cl");
+        assertThat(claims.getSubject()).isEqualTo("jess@perrosygatos.cl");
         assertThat(claims.get("uid", Long.class)).isEqualTo(1L);
         assertThat(claims.get("role", String.class)).isEqualTo("ROLE_OWNER");
-        assertThat(claims.get("firstname", String.class)).isEqualTo("Ana");
-        assertThat(claims.get("lastname", String.class)).isEqualTo("González");
+        assertThat(claims.get("firstname", String.class)).isEqualTo("Jess");
+        assertThat(claims.get("lastname", String.class)).isEqualTo("Alvarado");
+        assertThat(claims.get("jti", String.class)).isNotBlank();
     }
 
     @Test
     @DisplayName("Generated token should have a future expiration date")
-    void generateAccessToken_debeExpirarEnElFuturo() {
-        String token = jwtService.generateAccessToken(usuarioPrueba);
-        Date expiracion = jwtService.getExpirationDateFromToken(token);
+    void generateAccessToken_shouldHaveFutureExpiration() {
+        String token = jwtService.generateAccessToken(mockUser);
+        Date expiration = jwtService.getExpirationDateFromToken(token);
 
-        assertThat(expiracion).isAfter(new Date());
+        assertThat(expiration).isAfter(new Date());
     }
 
     @Test
     @DisplayName("Valid token should be recognized as valid")
-    void isTokenValid_conTokenValido_debeRetornarTrue() {
-        String token = jwtService.generateAccessToken(usuarioPrueba);
+    void isTokenValid_withValidToken_shouldReturnTrue() {
+        String token = jwtService.generateAccessToken(mockUser);
+        boolean isValid = jwtService.isTokenValid(token, mockUser);
 
-        boolean resultado = jwtService.isTokenValid(token, usuarioPrueba);
-
-        assertThat(resultado).isTrue();
+        assertThat(isValid).isTrue();
     }
 
     @Test
     @DisplayName("Token from another user should be invalid for current user")
-    void isTokenValid_conTokenDeOtroUsuario_debeRetornarFalse() {
-        Role rol = new Role();
-        rol.setName("ROLE_PROFESSIONAL");
+    void isTokenValid_withTokenFromAnotherUser_shouldReturnFalse() {
+        Role professionalRole = new Role();
+        professionalRole.setName("ROLE_PROFESSIONAL");
 
-        User otroUsuario = User.builder()
+        User anotherUser = User.builder()
                 .id(2L)
-                .username("pedro@perrosgatos.cl")
-                .password("otro_password")
-                .firstname("Pedro")
-                .lastname("Soto")
-                .role(rol)
+                .username("alex@perrosygatos.cl")
+                .password("another_password")
+                .firstname("Alex")
+                .lastname("Smith")
+                .role(professionalRole)
                 .build();
 
-        String tokenDePedro = jwtService.generateAccessToken(otroUsuario);
+        String tokenFromAnotherUser = jwtService.generateAccessToken(anotherUser);
+        boolean isValid = jwtService.isTokenValid(tokenFromAnotherUser, mockUser);
 
-        boolean resultado = jwtService.isTokenValid(tokenDePedro, usuarioPrueba);
-
-        assertThat(resultado).isFalse();
+        assertThat(isValid).isFalse();
     }
 
     @Test
     @DisplayName("Expired token should throw ExpiredJwtException on validation")
-    void isTokenValid_conTokenExpirado_debeLanzarExpiredJwtException() {
-        ReflectionTestUtils.setField(jwtService, "jwtExpirationMs", -1L);
-        String tokenExpirado = jwtService.generateAccessToken(usuarioPrueba);
-        ReflectionTestUtils.setField(jwtService, "jwtExpirationMs", EXPIRACION_MS);
+    void isTokenValid_withExpiredToken_shouldThrowExpiredJwtException() {
+        ReflectionTestUtils.setField(jwtService, "jwtExpirationMs", -1000L);
+        String expiredToken = jwtService.generateAccessToken(mockUser);
+        ReflectionTestUtils.setField(jwtService, "jwtExpirationMs", EXPIRATION_MS);
 
-        assertThatThrownBy(() -> jwtService.isTokenValid(tokenExpirado, usuarioPrueba))
-                .isInstanceOf(io.jsonwebtoken.ExpiredJwtException.class);
+        assertThatThrownBy(() -> jwtService.isTokenValid(expiredToken, mockUser))
+                .isInstanceOf(ExpiredJwtException.class);
     }
 
     @Test
-    @DisplayName("Should extract username correctly from token")
-    void getUsernameFromToken_debeRetornarUsernameCorrect() {
-        String token = jwtService.generateAccessToken(usuarioPrueba);
-
+    @DisplayName("Should extract username correctly from token subject")
+    void getUsernameFromToken_shouldReturnCorrectUsername() {
+        String token = jwtService.generateAccessToken(mockUser);
         String username = jwtService.getUsernameFromToken(token);
 
-        assertThat(username).isEqualTo("ana@perrosgatos.cl");
+        assertThat(username).isEqualTo("jess@perrosygatos.cl");
     }
 
     @Test
-    @DisplayName("Should extract user ID correctly from token")
-    void getUserIdFromToken_debeRetornarIdCorrecto() {
-        String token = jwtService.generateAccessToken(usuarioPrueba);
-
+    @DisplayName("Should extract user ID correctly from custom claim")
+    void getUserIdFromToken_shouldReturnCorrectId() {
+        String token = jwtService.generateAccessToken(mockUser);
         Long id = jwtService.getUserIdFromToken(token);
 
         assertThat(id).isEqualTo(1L);
     }
 
     @Test
-    @DisplayName("Token with altered signature should throw exception")
-    void getAllClaims_conTokenFalsificado_debeLanzarExcepcion() {
-        String tokenValido = jwtService.generateAccessToken(usuarioPrueba);
-        String tokenFalsificado = tokenValido.substring(0, tokenValido.length() - 5) + "XXXXX";
+    @DisplayName("Should extract unique JTI identifier correctly from token")
+    void getJtiFromToken_shouldReturnValidUuidString() {
+        String token = jwtService.generateAccessToken(mockUser);
+        String jti = jwtService.getJtiFromToken(token);
 
-        assertThatThrownBy(() -> jwtService.getAllClaims(tokenFalsificado))
+        assertThat(jti).isNotNull();
+        assertThat(jti).matches("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
+    }
+
+    @Test
+    @DisplayName("Token with altered signature should throw exception")
+    void getAllClaims_withAlteredSignature_shouldThrowException() {
+        String validToken = jwtService.generateAccessToken(mockUser);
+        String tamperedToken = validToken.substring(0, validToken.length() - 5) + "XXXXX";
+
+        assertThatThrownBy(() -> jwtService.getAllClaims(tamperedToken))
                 .isInstanceOf(Exception.class);
     }
 
     @Test
     @DisplayName("Invalid JWT string structure should throw exception")
-    void getAllClaims_conStringInvalido_debeLanzarExcepcion() {
-        assertThatThrownBy(() -> jwtService.getAllClaims("esto.no.es.un.jwt"))
+    void getAllClaims_withInvalidStructure_shouldThrowException() {
+        assertThatThrownBy(() -> jwtService.getAllClaims("this.is.not.a.valid.jwt"))
                 .isInstanceOf(Exception.class);
     }
 }

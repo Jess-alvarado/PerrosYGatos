@@ -11,89 +11,95 @@ It provides the foundation for managing users, pets, and professional services w
 
 ## Engineering Highlights
 
--   **Centralized JWT validation** handled by `pyg-auth`, isolating authentication logic from business services.
+* **Layered JWT security architecture**, where `pyg-gateway` validates access tokens, extracts user claims, propagates identity context through secure headers, and enforces token revocation using Redis.
 
+* **Defense-in-depth authentication strategy**, with each microservice independently validating JWT signatures before executing business logic, preventing trust on network boundaries alone.
 
--   **Ownership-based authorization** to ensure users can only access their own resources.
+* **Ownership-based authorization** to ensure users can only access and modify their own resources.
 
+* **Domain-driven service separation**, where each service owns its business logic, data model, and persistence layer.
 
--   **Domain-driven service separation**, where each service owns its business logic and persistence layer.
+* **Docker-based local development environment** using Docker Compose.
 
+* **Architecture designed to scale**, supporting future services such as scheduling, notifications, search, and additional domain-specific capabilities.
 
--   **Docker-based local development environment** using Docker Compose.
-
-
--   **Architecture designed to scale** with future services such as scheduling, notifications, and search.
-    
 
 ----------
 
 ## Architecture
 
 * **Frontend:** `pyg-frontend` (Vite + React)
-* **API Gateway:** `pyg-gateway` (Port 9090) - *Single entry point*
-    * ──► `/api/auth/**` ──► **pyg-auth** (Port 8081)
-    * ──► `/api/owner/**` ──► **pyg-owner** (Port 8082)
-    * ──► `/api/professional/**` ──► **pyg-professional** (Port 8083)
+
+* **API Gateway:** `pyg-gateway` (Port 9090)
+
+  * Single entry point for all client requests.
+
+  * Validates JWT access tokens.
+
+  * Extracts user claims (userId, username, role).
+
+  * Propagates identity context through secure request headers.
+
+  * Enforces token revocation using Redis-backed blacklist validation.
+
+  * ──► `/api/auth/**` ──► **pyg-auth** (Port 8081)
+
+  * ──► `/api/owner/**` ──► **pyg-owner** (Port 8082)
+
+  * ──► `/api/professional/**` ──► **pyg-professional** (Port 8083)
+
+* **Authentication Service:** `pyg-auth`
+
+  * User authentication and credential verification.
+  * JWT issuance and refresh token management.
+
+* **Business Services:** `pyg-owner`, `pyg-professional`
+
+  * Own their domain logic and persistence layer.
+  * Validate JWT signatures before processing business operations.
+  * Consume identity information propagated by the gateway.
+
+
+----------
 
 ## Tech Stack
 
 ### Backend
 
--   Java 17
-    
--   Spring Boot
-    
--   Spring Security
-    
--   JWT Authentication
-    
--   Spring Data JPA
-    
--   PostgreSQL
-    
--   Maven
-
+* Java 17
+* Spring Boot
+* Spring Security
+* JWT Authentication
+* Spring Data JPA
+* PostgreSQL
+* Redis
+* Maven
 
 ### Frontend
 
--   React 18
+* React
+* Vite
+* Tailwind CSS
 
--   Vite
+### Infrastructure & DevOps
 
--   Tailwind CSS
+* Docker & Docker Compose
+* API Gateway Pattern
+* GitHub Actions (CI/CD)
+* Automated Unit Testing
 
--   Axios
-
--   React Router Dom
-
--   Lucide React
-
--   JWT Decode
-    
-
-### Infrastructure & Tools
-
--   Docker
-    
--   Docker Compose
-
--   API Gateway
-
--   PostgreSQL
-    
 
 ----------
 
 ## Services
 
-| Service | Description |
-|---|---|
-| `pyg-gateway` | Entry Point. Centralized routing and request forwarding to microservices |
-| `pyg-frontend` | User Interface. React + Vite |
-| `pyg-auth` | Authentication and JWT validation |
-| `pyg-owner` | Pet owners and pets management |
-| `pyg-professional` | Professional profiles |
+| Service | Description                                                                             |
+|---|-----------------------------------------------------------------------------------------|
+| `pyg-gateway` | Entry point handling routing, JWT validation, claim extraction, and request forwarding  |
+| `pyg-frontend` | User Interface. React + Vite                                                            |
+| `pyg-auth` | Authentication, JWT issuance, and token management                                                       |
+| `pyg-owner` | Pet owners and pets management                                                          |
+| `pyg-professional` | Professional profiles                                                                   |
 
 ## Running Locally
 
@@ -145,24 +151,18 @@ pyg-professional
 
 ## Project Purpose
 
-This project is being developed as a backend platform focused on **scalable architecture, secure authentication, and service-oriented backend design**.
+Perros y Gatos is a platform aimed at supporting collaboration between pet owners and animal behavior professionals, helping manage behavioral cases through a secure, scalable, and maintainable architecture.
 
-It explores practical backend engineering concepts such as:
+Key engineering areas explored in this project include:
 
--   microservices architecture
-   
--   centralized authentication with JWT
-   
--   service-to-service communication
-   
--   secure resource access and authorization
-   
--   containerized development environments
-    
+* microservices architecture
+* API Gateway pattern
+* JWT-based authentication and authorization
+* Redis integration
+* automated testing and CI/CD
+* containerized development and deployment
+* domain-driven service separation
 
-The goal is to build a clean and extensible backend foundation that can support future platform features and additional services.
-
-Currently refactoring token validation from pyg-auth to pyg-gateway, extracting JWT claims at the gateway level and forwarding them via headers — reducing coupling between business services and the auth service.
 
 ----------
 

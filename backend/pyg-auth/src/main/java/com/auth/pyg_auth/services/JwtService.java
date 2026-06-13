@@ -17,6 +17,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.UUID;
 
 @Service
 public class JwtService {
@@ -35,6 +36,7 @@ public class JwtService {
         claims.put("role", user.getRole().getName());
         claims.put("firstname", user.getFirstname());
         claims.put("lastname", user.getLastname());
+        claims.put("jti", UUID.randomUUID().toString());
 
         return buildToken(claims, user);
     }
@@ -91,5 +93,9 @@ public class JwtService {
 
     private boolean isTokenExpired(String token) {
         return getExpirationDateFromToken(token).before(new Date());
+    }
+
+    public String getJtiFromToken(String token) {
+        return extractClaim(token, claims -> claims.get("jti", String.class));
     }
 }
