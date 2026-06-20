@@ -9,13 +9,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.owner.pyg_owner.dto.requests.PetRequest;
 import com.owner.pyg_owner.dto.responses.PetResponse;
+import com.owner.pyg_owner.exceptions.NotFoundException;
+import com.owner.pyg_owner.exceptions.ValidationException;
 import com.owner.pyg_owner.models.OwnerProfile;
 import com.owner.pyg_owner.models.Pet;
 import com.owner.pyg_owner.models.PetType;
 import com.owner.pyg_owner.repositories.OwnerRepository;
 import com.owner.pyg_owner.repositories.PetRepository;
-
-import jakarta.persistence.EntityNotFoundException;
 
 @Service
 public class PetService {
@@ -30,14 +30,13 @@ public class PetService {
 
         @Transactional
         public PetResponse addPet(Long userId, PetRequest req) {
-
                 OwnerProfile owner = ownerRepo.findByUserId(userId)
-                        .orElseThrow(() -> new EntityNotFoundException(
+                        .orElseThrow(() -> new NotFoundException(
                                 "Owner profile not found. Please complete your profile first."));
 
                 Pet pet = Pet.builder()
                         .name(req.name())
-                        .type(PetType.valueOf(req.type().toUpperCase(Locale.ROOT)))
+                        .type(parsePetType(req.type()))
                         .breed(req.breed())
                         .age(req.age())
                         .sterilized(req.sterilized())
@@ -46,26 +45,29 @@ public class PetService {
                         .owner(owner)
                         .build();
 
-                Pet saved = petRepo.save(pet);
-
-                return new PetResponse(
-                        saved.getId(),
-                        saved.getName(),
-                        saved.getType().name(),
-                        saved.getBreed(),
-                        saved.getAge(),
-                        saved.getSterilized(),
-                        saved.getSex(),
-                        saved.getBehaviorDescription());
+                try {
+                        Pet saved = petRepo.save(pet);
+                        return new PetResponse(
+                                saved.getId(),
+                                saved.getName(),
+                                saved.getType().name(),
+                                saved.getBreed(),
+                                saved.getAge(),
+                                saved.getSterilized(),
+                                saved.getSex(),
+                                saved.getBehaviorDescription());
+                } catch (Exception ex) {
+                        throw new ValidationException("Error saving pet: Invalid data provided");
+                }
         }
-
 
         @Transactional(readOnly = true)
         public List<PetResponse> getPetsByOwner(Long userId) {
-                OwnerProfile owner = ownerRepo.findByUserId(userId)
-                        .orElseThrow(() -> new EntityNotFoundException("Owner profile not found."));
+                if (!ownerRepo.findByUserId(userId).isPresent()) {
+                        throw new NotFoundException("Owner profile not found.");
+                }
 
-                return owner.getPets().stream()
+                return petRepo.findByOwnerUserId(userId).stream()
                         .map(p -> new PetResponse(
                                 p.getId(),
                                 p.getName(),
@@ -81,7 +83,7 @@ public class PetService {
         @Transactional(readOnly = true)
         public PetResponse getPetById(Long userId, Long petId) {
                 Pet pet = petRepo.findByIdAndOwnerUserId(petId, userId)
-                        .orElseThrow(() -> new EntityNotFoundException("Pet not found"));
+                        .orElseThrow(() -> new NotFoundException("Pet not found"));
 
                 return new PetResponse(
                         pet.getId(),
@@ -92,5 +94,14 @@ public class PetService {
                         pet.getSterilized(),
                         pet.getSex(),
                         pet.getBehaviorDescription());
+        }
+
+        private PetType parsePetType(String type) {
+                try {
+                        return PetType.valueOf(type.toUpperCase(Locale.ROOT));
+                } catch (IllegalArgumentException ex) {
+                        throw new ValidationException(
+                                "Invalid pet type: " + type + ". Allowed values: DOG, CAT");
+                }
         }
 }

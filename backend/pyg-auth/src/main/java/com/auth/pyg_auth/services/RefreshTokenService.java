@@ -1,5 +1,6 @@
 package com.auth.pyg_auth.services;
 
+import com.auth.pyg_auth.exceptions.InvalidCredentialsException;
 import com.auth.pyg_auth.models.RefreshToken;
 import com.auth.pyg_auth.models.User;
 import com.auth.pyg_auth.repositories.RefreshTokenRepository;
@@ -35,10 +36,10 @@ public class RefreshTokenService {
 
     public RefreshToken validateRefreshToken(String token) {
         RefreshToken refreshToken = refreshTokenRepository.findByTokenAndRevokedFalse(token)
-                .orElseThrow(() -> new RuntimeException("Refresh token not found or revoked"));
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid or expired refresh token"));
 
         if (refreshToken.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Refresh token expired");
+            throw new InvalidCredentialsException("Invalid or expired refresh token");
         }
 
         return refreshToken;
@@ -47,7 +48,7 @@ public class RefreshTokenService {
     @Transactional
     public void revokeToken(String token) {
         RefreshToken refreshToken = refreshTokenRepository.findByTokenAndRevokedFalse(token)
-                .orElseThrow(() -> new RuntimeException("Refresh token not found or already revoked"));
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid or expired refresh token"));
 
         refreshToken.setRevoked(true);
         refreshTokenRepository.save(refreshToken);
@@ -55,12 +56,18 @@ public class RefreshTokenService {
 
     @Transactional
     public void revokeAllUserTokens(Long userId) {
-        List<RefreshToken> activeTokens = refreshTokenRepository.findAllByUserIdAndRevokedFalse(userId);
+        try {
+            List<RefreshToken> activeTokens = refreshTokenRepository.findAllByUserIdAndRevokedFalse(userId);
 
-        for (RefreshToken token : activeTokens) {
-            token.setRevoked(true);
+            for (RefreshToken token : activeTokens) {
+                token.setRevoked(true);
+            }
+
+            if (!activeTokens.isEmpty()) {
+                refreshTokenRepository.saveAll(activeTokens);
+            }
+        } catch (Exception ex) {
+            throw new InvalidCredentialsException("Error processing session termination");
         }
-
-        refreshTokenRepository.saveAll(activeTokens);
     }
 }

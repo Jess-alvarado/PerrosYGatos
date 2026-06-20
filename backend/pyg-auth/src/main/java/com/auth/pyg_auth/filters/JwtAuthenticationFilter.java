@@ -14,6 +14,10 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.List;
 
+
+// TODO:
+// reemplazar respuestas directas 401 por AuthenticationEntryPoint
+// para mantener el mismo ErrorResponse del GlobalExceptionHandler
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter implements Filter {

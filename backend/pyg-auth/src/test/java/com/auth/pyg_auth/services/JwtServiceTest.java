@@ -1,9 +1,9 @@
 package com.auth.pyg_auth.services;
 
+import com.auth.pyg_auth.exceptions.InvalidCredentialsException;
 import com.auth.pyg_auth.models.Role;
 import com.auth.pyg_auth.models.User;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -100,14 +100,15 @@ class JwtServiceTest {
     }
 
     @Test
-    @DisplayName("Expired token should throw ExpiredJwtException on validation")
-    void isTokenValid_withExpiredToken_shouldThrowExpiredJwtException() {
+    @DisplayName("Expired token should throw InvalidCredentialsException on validation")
+    void isTokenValid_withExpiredToken_shouldThrowInvalidCredentialsException() {
         ReflectionTestUtils.setField(jwtService, "jwtExpirationMs", -1000L);
         String expiredToken = jwtService.generateAccessToken(mockUser);
         ReflectionTestUtils.setField(jwtService, "jwtExpirationMs", EXPIRATION_MS);
 
         assertThatThrownBy(() -> jwtService.isTokenValid(expiredToken, mockUser))
-                .isInstanceOf(ExpiredJwtException.class);
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessageContaining("Invalid, expired or tampered token");
     }
 
     @Test
@@ -139,19 +140,21 @@ class JwtServiceTest {
     }
 
     @Test
-    @DisplayName("Token with altered signature should throw exception")
-    void getAllClaims_withAlteredSignature_shouldThrowException() {
+    @DisplayName("Token with altered signature should throw InvalidCredentialsException")
+    void getAllClaims_withAlteredSignature_shouldThrowInvalidCredentialsException() {
         String validToken = jwtService.generateAccessToken(mockUser);
         String tamperedToken = validToken.substring(0, validToken.length() - 5) + "XXXXX";
 
         assertThatThrownBy(() -> jwtService.getAllClaims(tamperedToken))
-                .isInstanceOf(Exception.class);
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessageContaining("Invalid, expired or tampered token");
     }
 
     @Test
-    @DisplayName("Invalid JWT string structure should throw exception")
-    void getAllClaims_withInvalidStructure_shouldThrowException() {
+    @DisplayName("Invalid JWT string structure should throw InvalidCredentialsException")
+    void getAllClaims_withInvalidStructure_shouldThrowInvalidCredentialsException() {
         assertThatThrownBy(() -> jwtService.getAllClaims("this.is.not.a.valid.jwt"))
-                .isInstanceOf(Exception.class);
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessageContaining("Invalid, expired or tampered token");
     }
 }

@@ -1,6 +1,7 @@
 package com.owner.pyg_owner.controllers;
 
 import com.owner.pyg_owner.dto.requests.OwnerCreateRequest;
+import com.owner.pyg_owner.dto.requests.OwnerUpdateRequest;
 import com.owner.pyg_owner.dto.responses.OwnerResponse;
 import com.owner.pyg_owner.services.OwnerService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,6 +14,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,17 +27,34 @@ public class OwnerController {
 
         private final OwnerService ownerService;
 
-        @Operation(summary = "Create or update owner profile", description = "Creates a new owner profile or updates the existing one based on the authenticated user")
+        @Operation(summary = "Create owner profile", description = "Creates a new owner profile for the authenticated user")
         @ApiResponses({
-                @ApiResponse(responseCode = "200", description = "Owner profile created or updated successfully", content = @Content(schema = @Schema(implementation = OwnerResponse.class))),
+                @ApiResponse(responseCode = "201", description = "Owner profile created successfully", content = @Content(schema = @Schema(implementation = OwnerResponse.class))),
                 @ApiResponse(responseCode = "400", description = "Invalid request data"),
-                @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or expired JWT token")
+                @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or expired JWT token"),
+                @ApiResponse(responseCode = "409", description = "Conflict - Owner profile already exists")
         })
         @PostMapping("/profile")
-        public ResponseEntity<OwnerResponse> upsertProfile(
+        public ResponseEntity<OwnerResponse> createProfile(
                 @Parameter(hidden = true) @RequestHeader("X-User-Id") Long userId,
                 @Valid @RequestBody OwnerCreateRequest request) {
-                return ResponseEntity.ok(ownerService.createOrUpdateProfile(userId, request));
+                return ResponseEntity.status(HttpStatus.CREATED)
+                        .body(ownerService.createProfile(userId, request));
+        }
+
+        @Operation(summary = "Update owner profile", description = "Updates specific details of the existing owner profile")
+        @ApiResponses({
+                @ApiResponse(responseCode = "200", description = "Owner profile updated successfully", content = @Content(schema = @Schema(implementation = OwnerResponse.class))),
+                @ApiResponse(responseCode = "400", description = "Invalid request data"),
+                @ApiResponse(responseCode = "401", description = "Unauthorized - Invalid or expired JWT token"),
+                @ApiResponse(responseCode = "404", description = "Owner profile not found")
+        })
+        @PatchMapping("/profile")
+        public ResponseEntity<OwnerResponse> updateProfile(
+                @Parameter(hidden = true) @RequestHeader("X-User-Id") Long userId,
+                @Valid @RequestBody OwnerUpdateRequest request) {
+                return ResponseEntity.ok(
+                        ownerService.updateProfile(userId, request));
         }
 
         @Operation(summary = "Get current owner profile", description = "Returns the owner profile associated with the authenticated user")

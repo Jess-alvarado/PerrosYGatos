@@ -2,12 +2,13 @@ package com.owner.pyg_owner.services;
 
 import com.owner.pyg_owner.dto.requests.PetRequest;
 import com.owner.pyg_owner.dto.responses.PetResponse;
+import com.owner.pyg_owner.exceptions.NotFoundException;
+import com.owner.pyg_owner.exceptions.ValidationException;
 import com.owner.pyg_owner.models.OwnerProfile;
 import com.owner.pyg_owner.models.Pet;
 import com.owner.pyg_owner.models.PetType;
 import com.owner.pyg_owner.repositories.OwnerRepository;
 import com.owner.pyg_owner.repositories.PetRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -84,7 +85,6 @@ class PetServiceTest {
     @Test
     @DisplayName("Should normalize lowercase pet type input to correct uppercase enum string")
     void addPet_WithLowercaseType_ShouldNormalizeToEnum() {
-        // Given
         PetRequest request = new PetRequest(
                 "Michi", "cat", "Siamese", 2, false, "Female", null
         );
@@ -102,8 +102,8 @@ class PetServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw IllegalArgumentException when pet type does not exist in the system")
-    void addPet_WithInvalidType_ShouldThrowIllegalArgumentException() {
+    @DisplayName("Should throw ValidationException when pet type does not exist in the system")
+    void addPet_WithInvalidType_ShouldThrowValidationException() {
         PetRequest request = new PetRequest(
                 "Tweety", "BIRD", "Canary", 1, false, "Male", null
         );
@@ -111,14 +111,15 @@ class PetServiceTest {
         when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.of(ownerProfile));
 
         assertThatThrownBy(() -> petService.addPet(TEST_USER_ID, request))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Allowed values: DOG, CAT");
 
         verify(petRepo, never()).save(any());
     }
 
     @Test
-    @DisplayName("Should throw EntityNotFoundException when attempting to add a pet to a non-existent owner profile")
-    void addPet_WithNoOwnerProfile_ShouldThrowEntityNotFoundException() {
+    @DisplayName("Should throw NotFoundException when attempting to add a pet to a non-existent owner profile")
+    void addPet_WithNoOwnerProfile_ShouldThrowNotFoundException() {
         PetRequest request = new PetRequest(
                 "Rex", "DOG", "Labrador", 3, true, "Male", null
         );
@@ -126,7 +127,7 @@ class PetServiceTest {
         when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> petService.addPet(TEST_USER_ID, request))
-                .isInstanceOf(EntityNotFoundException.class)
+                .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("Owner profile not found");
 
         verify(petRepo, never()).save(any());
@@ -145,10 +146,9 @@ class PetServiceTest {
                 .breed("Siamese").age(2).sterilized(false)
                 .sex("Female").behaviorDescription(null).build();
 
-        ownerProfile.getPets().add(dog);
-        ownerProfile.getPets().add(cat);
-
         when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.of(ownerProfile));
+
+        when(petRepo.findByOwnerUserId(TEST_USER_ID)).thenReturn(List.of(dog, cat));
 
         List<PetResponse> responses = petService.getPetsByOwner(TEST_USER_ID);
 
@@ -164,19 +164,19 @@ class PetServiceTest {
     void getPetsByOwner_WithNoPets_ShouldReturnEmptyList() {
         when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.of(ownerProfile));
 
+        when(petRepo.findByOwnerUserId(TEST_USER_ID)).thenReturn(List.of());
+
         List<PetResponse> responses = petService.getPetsByOwner(TEST_USER_ID);
 
         assertThat(responses).isEmpty();
-        verifyNoInteractions(petRepo);
     }
 
     @Test
-    @DisplayName("Should throw EntityNotFoundException when querying pets for a user with no profile record")
-    void getPetsByOwner_WithNoOwnerProfile_ShouldThrowEntityNotFoundException() {
+    @DisplayName("Should throw NotFoundException when querying pets for a user with no profile record")
+    void getPetsByOwner_WithNoOwnerProfile_ShouldThrowNotFoundException() {
         when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.empty());
-
         assertThatThrownBy(() -> petService.getPetsByOwner(TEST_USER_ID))
-                .isInstanceOf(EntityNotFoundException.class)
+                .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("Owner profile not found");
     }
 
@@ -198,12 +198,24 @@ class PetServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw EntityNotFoundException when pet id is missing or does not match owner user id")
-    void getPetById_WithPetFromAnotherOwner_ShouldThrowEntityNotFoundException() {
+    @DisplayName("Should throw NotFoundException when pet id is missing or does not match owner user id")
+    void getPetById_WithPetFromAnotherOwner_ShouldThrowNotFoundException() {
         when(petRepo.findByIdAndOwnerUserId(PET_ID, TEST_USER_ID)).thenReturn(Optional.empty());
-
         assertThatThrownBy(() -> petService.getPetById(TEST_USER_ID, PET_ID))
-                .isInstanceOf(EntityNotFoundException.class)
+                .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("Pet not found");
+    }
+
+    @Test
+    @DisplayName("Should throw ValidationException when repository save fails during creation")
+    void addPet_WhenSaveFails_ShouldThrowValidationException() {
+        PetRequest request = new PetRequest("Rex", "DOG", "Labrador", 3, true, "Male", null);
+
+        when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.of(ownerProfile));
+        when(petRepo.save(any(Pet.class))).thenThrow(new RuntimeException("Database down"));
+
+        assertThatThrownBy(() -> petService.addPet(TEST_USER_ID, request))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Error saving pet: Invalid data provided");
     }
 }

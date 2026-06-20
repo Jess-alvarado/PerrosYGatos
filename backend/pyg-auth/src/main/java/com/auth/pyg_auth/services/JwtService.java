@@ -1,6 +1,7 @@
 package com.auth.pyg_auth.services;
 
 import com.auth.pyg_auth.models.User;
+import com.auth.pyg_auth.exceptions.InvalidCredentialsException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -79,12 +80,17 @@ public class JwtService {
     }
 
     public Claims getAllClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(getKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (Exception ex) {
+            throw new InvalidCredentialsException("Invalid, expired or tampered token");
+        }
     }
+    // =========================================================================
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = getAllClaims(token);

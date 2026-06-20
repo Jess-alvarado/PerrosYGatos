@@ -3,14 +3,13 @@ package com.owner.pyg_owner.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.owner.pyg_owner.dto.requests.PetRequest;
 import com.owner.pyg_owner.dto.responses.PetResponse;
+import com.owner.pyg_owner.exceptions.NotFoundException;
 import com.owner.pyg_owner.services.PetService;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
@@ -111,14 +110,13 @@ class PetControllerTest {
     }
 
     @Test
-    @DisplayName("Should throw EntityNotFoundException when pet is not found")
-    void getPetById_WhenPetNotFound_ShouldThrowException() throws Exception {
+    @DisplayName("Should return 404 Not Found status when pet is not found in the service layer")
+    void getPetById_WhenPetNotFound_ShouldReturn404NotFound() throws Exception {
         Mockito.when(petService.getPetById(any(Long.class), any(Long.class)))
-                .thenThrow(new jakarta.persistence.EntityNotFoundException("Pet not found"));
+                .thenThrow(new NotFoundException("Pet not found"));
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
-                mockMvc.perform(get("/pets/999")
+        mockMvc.perform(get("/pets/999")
                         .header("X-User-Id", TEST_USER_ID))
-        ).hasCauseInstanceOf(jakarta.persistence.EntityNotFoundException.class);
+                .andExpect(status().isNotFound());
     }
 }
