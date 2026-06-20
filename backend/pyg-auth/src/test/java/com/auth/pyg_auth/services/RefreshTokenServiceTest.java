@@ -1,5 +1,6 @@
 package com.auth.pyg_auth.services;
 
+import com.auth.pyg_auth.exceptions.InvalidCredentialsException;
 import com.auth.pyg_auth.models.RefreshToken;
 import com.auth.pyg_auth.models.Role;
 import com.auth.pyg_auth.models.User;
@@ -116,19 +117,19 @@ class RefreshTokenServiceTest {
 
     @Test
     @DisplayName("Should throw exception when token is not found or revoked")
-    void validateRefreshToken_withNonExistentToken_shouldThrowRuntimeException() {
+    void validateRefreshToken_withNonExistentToken_shouldThrowInvalidCredentialsException() {
         when(refreshTokenRepository.findByTokenAndRevokedFalse("missing-token"))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() ->
                 refreshTokenService.validateRefreshToken("missing-token"))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Refresh token not found or revoked");
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessageContaining("Invalid or expired refresh token");
     }
 
     @Test
     @DisplayName("Should throw exception when token exists but is expired")
-    void validateRefreshToken_withExpiredToken_shouldThrowRuntimeException() {
+    void validateRefreshToken_withExpiredToken_shouldThrowInvalidCredentialsException() {
         RefreshToken expiredToken = RefreshToken.builder()
                 .token("expired-uuid")
                 .user(mockUser)
@@ -141,14 +142,13 @@ class RefreshTokenServiceTest {
 
         assertThatThrownBy(() ->
                 refreshTokenService.validateRefreshToken("expired-uuid"))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Refresh token expired");
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessageContaining("Invalid or expired refresh token");
     }
 
     @Test
     @DisplayName("Should mark token as revoked and save it when revoking an active token")
     void revokeToken_withActiveToken_shouldMarkAsRevokedAndSave() {
-        // Arrange
         RefreshToken activeToken = RefreshToken.builder()
                 .token("active-uuid")
                 .user(mockUser)
@@ -167,13 +167,13 @@ class RefreshTokenServiceTest {
 
     @Test
     @DisplayName("Should throw exception when trying to revoke a non-existent token")
-    void revokeToken_withNonExistentToken_shouldThrowRuntimeException() {
+    void revokeToken_withNonExistentToken_shouldThrowInvalidCredentialsException() {
         when(refreshTokenRepository.findByTokenAndRevokedFalse("non-existent"))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> refreshTokenService.revokeToken("non-existent"))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Refresh token not found or already revoked");
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessageContaining("Invalid or expired refresh token");
     }
 
     @Test
@@ -201,13 +201,24 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    @DisplayName("Should call saveAll with an empty list if user has no active tokens")
-    void revokeAllUserTokens_withNoActiveTokens_shouldSaveEmptyList() {
+    @DisplayName("Should NOT call saveAll if user has no active tokens")
+    void revokeAllUserTokens_withNoActiveTokens_shouldNotSaveAnything() {
         when(refreshTokenRepository.findAllByUserIdAndRevokedFalse(99L))
                 .thenReturn(List.of());
 
         refreshTokenService.revokeAllUserTokens(99L);
 
-        verify(refreshTokenRepository, times(1)).saveAll(List.of());
+        verify(refreshTokenRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    @DisplayName("Should throw InvalidCredentialsException when database fails during mass revocation")
+    void revokeAllUserTokens_whenRepositoryFails_shouldThrowInvalidCredentialsException() {
+        when(refreshTokenRepository.findAllByUserIdAndRevokedFalse(1L))
+                .thenThrow(new RuntimeException("Database connection down"));
+
+        assertThatThrownBy(() -> refreshTokenService.revokeAllUserTokens(1L))
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessageContaining("Error processing session termination");
     }
 }

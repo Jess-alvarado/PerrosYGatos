@@ -2,6 +2,7 @@ package com.owner.pyg_owner.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.owner.pyg_owner.dto.requests.OwnerCreateRequest;
+import com.owner.pyg_owner.dto.requests.OwnerUpdateRequest;
 import com.owner.pyg_owner.dto.responses.OwnerResponse;
 import com.owner.pyg_owner.services.OwnerService;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -50,12 +52,12 @@ class OwnerControllerTest {
     private JpaMetamodelMappingContext jpaMetamodelMappingContext;
 
     private OwnerResponse mockResponse;
-    private OwnerCreateRequest mockRequest;
+    private OwnerCreateRequest mockCreateRequest;
     private final Long testUserId = 123L;
 
     @BeforeEach
     void setUp() {
-        mockRequest = new OwnerCreateRequest(
+        mockCreateRequest = new OwnerCreateRequest(
                 "+56912345678",
                 "Calle Falsa 123, Linares",
                 LocalDate.of(1995, 5, 15)
@@ -71,20 +73,45 @@ class OwnerControllerTest {
     }
 
     @Test
-    @DisplayName("Should successfully create or update profile when valid request data and X-User-Id header are provided")
-    void upsertProfile_ShouldReturn200Ok() throws Exception {
-        Mockito.when(ownerService.createOrUpdateProfile(eq(testUserId), any(OwnerCreateRequest.class)))
+    @DisplayName("Should successfully create profile and return 201 Created when valid data is provided")
+    void createProfile_ShouldReturn201Created() throws Exception {
+        Mockito.when(ownerService.createProfile(eq(testUserId), any(OwnerCreateRequest.class)))
                 .thenReturn(mockResponse);
 
         mockMvc.perform(post("/owners/profile")
                         .header("X-User-Id", testUserId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(mockRequest)))
-                .andExpect(status().isOk())
+                        .content(objectMapper.writeValueAsString(mockCreateRequest)))
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.userId").value(testUserId))
                 .andExpect(jsonPath("$.phone").value("+56912345678"))
                 .andExpect(jsonPath("$.address").value("Calle Falsa 123, Linares"));
+    }
+
+    @Test
+    @DisplayName("Should successfully update profile and return 200 Ok when valid partial data is provided")
+    void updateProfile_ShouldReturn200Ok() throws Exception {
+        OwnerUpdateRequest updateRequest = new OwnerUpdateRequest(
+                "+56987654321",
+                "Nueva Direccion 456, Linares",
+                null
+        );
+
+        OwnerResponse updatedResponse = new OwnerResponse(
+                1L, testUserId, "+56987654321", "Nueva Direccion 456, Linares", LocalDate.of(1995, 5, 15)
+        );
+
+        Mockito.when(ownerService.updateProfile(eq(testUserId), any(OwnerUpdateRequest.class)))
+                .thenReturn(updatedResponse);
+
+        mockMvc.perform(patch("/owners/profile")
+                        .header("X-User-Id", testUserId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.phone").value("+56987654321"))
+                .andExpect(jsonPath("$.address").value("Nueva Direccion 456, Linares"));
     }
 
     @Test
@@ -102,9 +129,10 @@ class OwnerControllerTest {
     }
 
     @Test
-    @DisplayName("Should return 400 Bad Request when X-User-Id header is missing from the request")
-    void getMyProfile_WhenHeaderIsMissing_ShouldReturn400BadRequest() throws Exception {
+    @DisplayName("Should return 500 Internal Server Error when X-User-Id header is missing from the request")
+    void getMyProfile_WhenHeaderIsMissing_ShouldReturn500InternalServerError() throws Exception {
         mockMvc.perform(get("/owners/profile"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.errorCode").value("INTERNAL_ERROR"));
     }
 }

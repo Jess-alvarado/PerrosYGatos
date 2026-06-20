@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.professional.pyg_professional.dto.requests.ProfessionalRequest;
 import com.professional.pyg_professional.dto.requests.ProfessionalUpdateRequest;
 import com.professional.pyg_professional.dto.responses.ProfessionalResponse;
+import com.professional.pyg_professional.exceptions.AlreadyExistsException;
 import com.professional.pyg_professional.services.ProfessionalService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,12 +14,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.data.jpa.mapping.JpaMetamodelMappingContext;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -114,13 +113,15 @@ class ProfessionalControllerTest {
     @DisplayName("Create profile returns 409 when profile already exists")
     void createProfile_whenProfileAlreadyExists_shouldReturn409() throws Exception {
         Mockito.when(professionalService.createProfile(any(Long.class), any(ProfessionalRequest.class)))
-                .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Professional profile already exists"));
+                .thenThrow(new AlreadyExistsException("Professional profile already exists"));
 
         mockMvc.perform(post("/professionals/profile")
                         .header("X-User-Id", TEST_USER_ID)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(testRequest)))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errorCode").value("ALREADY_EXISTS"))
+                .andExpect(jsonPath("$.message").value("Professional profile already exists"));
     }
 
     @Test

@@ -3,17 +3,18 @@ package com.professional.pyg_professional.services;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.professional.pyg_professional.dto.requests.ProfessionalRequest;
 import com.professional.pyg_professional.dto.requests.ProfessionalUpdateRequest;
 import com.professional.pyg_professional.dto.responses.ProfessionalResponse;
+import com.professional.pyg_professional.exceptions.AlreadyExistsException;
+import com.professional.pyg_professional.exceptions.NotFoundException;
+import com.professional.pyg_professional.exceptions.ValidationException;
 import com.professional.pyg_professional.models.ProfessionalProfile;
 import com.professional.pyg_professional.repositories.ProfessionalRepository;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -24,9 +25,8 @@ public class ProfessionalService {
 
     @Transactional
     public ProfessionalResponse createProfile(Long userId, ProfessionalRequest req) {
-
         if (professionalRepository.existsByUserId(userId)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Professional profile already exists");
+            throw new AlreadyExistsException("Professional profile already exists");
         }
 
         ProfessionalProfile professional = ProfessionalProfile.builder()
@@ -47,13 +47,17 @@ public class ProfessionalService {
                 .reviewCount(0)
                 .build();
 
-        ProfessionalProfile saved = professionalRepository.save(professional);
-        return toResponse(saved);
+        try {
+            ProfessionalProfile saved = professionalRepository.save(professional);
+            return toResponse(saved);
+        } catch (Exception ex) {
+            throw new ValidationException("Error creating professional profile: Invalid data provided");
+        }
     }
 
     public ProfessionalResponse getMyProfile(Long userId) {
         ProfessionalProfile profile = professionalRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professional profile not found"));
+                .orElseThrow(() -> new NotFoundException("Professional profile not found"));
 
         return toResponse(profile);
     }
@@ -61,7 +65,7 @@ public class ProfessionalService {
     @Transactional
     public ProfessionalResponse updateMyProfile(Long userId, ProfessionalUpdateRequest req) {
         ProfessionalProfile profile = professionalRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professional profile not found"));
+                .orElseThrow(() -> new NotFoundException("Professional profile not found"));
 
         if (req.phone() != null) profile.setPhone(req.phone());
         if (req.address() != null) profile.setAddress(req.address());
@@ -75,8 +79,12 @@ public class ProfessionalService {
         if (req.website() != null) profile.setWebsite(req.website());
         if (req.availability() != null) profile.setAvailability(req.availability());
 
-        ProfessionalProfile saved = professionalRepository.save(profile);
-        return toResponse(saved);
+        try {
+            ProfessionalProfile saved = professionalRepository.save(profile);
+            return toResponse(saved);
+        } catch (Exception ex) {
+            throw new ValidationException("Error updating professional profile: Invalid data provided");
+        }
     }
 
     public List<ProfessionalResponse> getAllProfessionals() {
@@ -88,7 +96,7 @@ public class ProfessionalService {
 
     public ProfessionalResponse getProfessionalById(Long id) {
         ProfessionalProfile profile = professionalRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Professional profile not found"));
+                .orElseThrow(() -> new NotFoundException("Professional profile not found"));
 
         return toResponse(profile);
     }

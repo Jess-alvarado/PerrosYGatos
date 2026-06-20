@@ -4,6 +4,9 @@ import com.auth.pyg_auth.dto.requests.LoginRequest;
 import com.auth.pyg_auth.dto.requests.RefreshTokenRequest;
 import com.auth.pyg_auth.dto.requests.UserRegisterRequest;
 import com.auth.pyg_auth.dto.responses.AuthResponse;
+import com.auth.pyg_auth.exceptions.AlreadyExistsException;
+import com.auth.pyg_auth.exceptions.InvalidCredentialsException;
+import com.auth.pyg_auth.exceptions.NotFoundException;
 import com.auth.pyg_auth.models.RefreshToken;
 import com.auth.pyg_auth.models.Role;
 import com.auth.pyg_auth.models.User;
@@ -77,7 +80,6 @@ class AuthServiceTest {
     @Test
     @DisplayName("Login with valid credentials should return AuthResponse")
     void login_withValidCredentials_shouldReturnAuthResponse() {
-        // Arrange
         LoginRequest request = LoginRequest.builder()
                 .username("jess@perrosygatos.cl")
                 .password("password123")
@@ -100,8 +102,8 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("Login with non existent user should throw RuntimeException")
-    void login_withNonExistentUser_shouldThrowRuntimeException() {
+    @DisplayName("Login with non existent user should throw InvalidCredentialsException")
+    void login_withNonExistentUser_shouldThrowInvalidCredentialsException() {
         LoginRequest request = LoginRequest.builder()
                 .username("missing@perrosygatos.cl")
                 .password("anyPassword")
@@ -112,13 +114,13 @@ class AuthServiceTest {
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.login(request))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("User not found");
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessageContaining("Invalid username or password");
     }
 
     @Test
-    @DisplayName("Login with invalid credentials should throw BadCredentialsException")
-    void login_withInvalidCredentials_shouldThrowBadCredentialsException() {
+    @DisplayName("Login with invalid credentials should throw InvalidCredentialsException")
+    void login_withInvalidCredentials_shouldThrowInvalidCredentialsException() {
         LoginRequest request = LoginRequest.builder()
                 .username("jess@perrosygatos.cl")
                 .password("wrong_password")
@@ -127,8 +129,10 @@ class AuthServiceTest {
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new BadCredentialsException("Bad credentials"));
 
+
         assertThatThrownBy(() -> authService.login(request))
-                .isInstanceOf(BadCredentialsException.class);
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessageContaining("Invalid username or password");
 
         verify(userRepository, never()).findByUsername(anyString());
     }
@@ -144,6 +148,7 @@ class AuthServiceTest {
                 .rolename("ROLE_OWNER")
                 .build();
 
+        when(userRepository.existsByUsername("newuser@perrosygatos.cl")).thenReturn(false);
         when(roleRepository.findByName("ROLE_OWNER")).thenReturn(Optional.of(mockRole));
         when(passwordEncoder.encode("password123")).thenReturn("bcrypt_encoded_string");
         when(userRepository.save(any(User.class))).thenReturn(mockUser);
@@ -161,18 +166,37 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("Register with non existent role should throw RuntimeException")
-    void register_withNonExistentRole_shouldThrowRuntimeException() {
+    @DisplayName("Register with already existing username should throw AlreadyExistsException")
+    void register_withExistingUsername_shouldThrowAlreadyExistsException() {
+        UserRegisterRequest request = UserRegisterRequest.builder()
+                .username("jess@perrosygatos.cl")
+                .password("password123")
+                .rolename("ROLE_OWNER")
+                .build();
+
+        when(userRepository.existsByUsername("jess@perrosygatos.cl")).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(AlreadyExistsException.class)
+                .hasMessageContaining("Username already exists");
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Register with non existent role should throw NotFoundException")
+    void register_withNonExistentRole_shouldThrowNotFoundException() {
         UserRegisterRequest request = UserRegisterRequest.builder()
                 .username("newuser@perrosygatos.cl")
                 .password("password123")
                 .rolename("ROLE_INVALID")
                 .build();
 
+        when(userRepository.existsByUsername("newuser@perrosygatos.cl")).thenReturn(false);
         when(roleRepository.findByName("ROLE_INVALID")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.register(request))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("Role not found");
 
         verify(userRepository, never()).save(any());
@@ -206,6 +230,21 @@ class AuthServiceTest {
         assertThat(response.getRefreshToken()).isEqualTo("brand-new-refresh-token");
 
         verify(refreshTokenService, times(1)).revokeToken("refresh-token-uuid-string");
+    }
+
+    @Test
+    @DisplayName("Refresh with invalid or expired token should throw InvalidCredentialsException")
+    void refresh_withInvalidToken_shouldThrowInvalidCredentialsException() {
+        RefreshTokenRequest request = RefreshTokenRequest.builder()
+                .refreshToken("broken-token")
+                .build();
+
+        when(refreshTokenService.validateRefreshToken("broken-token"))
+                .thenThrow(new RuntimeException("Token expired or invalid"));
+
+        assertThatThrownBy(() -> authService.refresh(request))
+                .isInstanceOf(InvalidCredentialsException.class)
+                .hasMessageContaining("Invalid or expired refresh token");
     }
 
     @Test

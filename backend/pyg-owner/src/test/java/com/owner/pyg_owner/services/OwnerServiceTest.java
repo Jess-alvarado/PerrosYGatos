@@ -1,10 +1,13 @@
 package com.owner.pyg_owner.services;
 
 import com.owner.pyg_owner.dto.requests.OwnerCreateRequest;
+import com.owner.pyg_owner.dto.requests.OwnerUpdateRequest;
 import com.owner.pyg_owner.dto.responses.OwnerResponse;
+import com.owner.pyg_owner.exceptions.AlreadyExistsException;
+import com.owner.pyg_owner.exceptions.NotFoundException;
+import com.owner.pyg_owner.exceptions.ValidationException;
 import com.owner.pyg_owner.models.OwnerProfile;
 import com.owner.pyg_owner.repositories.OwnerRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,7 +47,7 @@ class OwnerServiceTest {
 
     @Test
     @DisplayName("Should create a new owner profile when user has no existing profile")
-    void createOrUpdateProfile_WithNoExistingProfile_ShouldCreateNewProfile() {
+    void createProfile_WithNoExistingProfile_ShouldCreateNewProfile() {
         when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.empty());
         when(ownerRepo.save(any(OwnerProfile.class)))
                 .thenAnswer(invocation -> {
@@ -53,7 +56,7 @@ class OwnerServiceTest {
                     return p;
                 });
 
-        OwnerResponse response = ownerService.createOrUpdateProfile(TEST_USER_ID, testRequest);
+        OwnerResponse response = ownerService.createProfile(TEST_USER_ID, testRequest);
 
         assertThat(response.userId()).isEqualTo(TEST_USER_ID);
         assertThat(response.phone()).isEqualTo("+56912345678");
@@ -63,8 +66,21 @@ class OwnerServiceTest {
     }
 
     @Test
-    @DisplayName("Should update existing owner profile details instead of creating a new record")
-    void createOrUpdateProfile_WithExistingProfile_ShouldUpdateCurrentProfile() {
+    @DisplayName("Should throw AlreadyExistsException when trying to create a profile that already exists")
+    void createProfile_WithExistingProfile_ShouldThrowAlreadyExistsException() {
+        OwnerProfile existingProfile = OwnerProfile.builder().id(10L).userId(TEST_USER_ID).build();
+        when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.of(existingProfile));
+
+        assertThatThrownBy(() -> ownerService.createProfile(TEST_USER_ID, testRequest))
+                .isInstanceOf(AlreadyExistsException.class)
+                .hasMessageContaining("Owner profile already exists");
+
+        verify(ownerRepo, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should update existing owner profile details successfully")
+    void updateProfile_WithExistingProfile_ShouldUpdateCurrentProfile() {
         OwnerProfile existingProfile = OwnerProfile.builder()
                 .id(10L)
                 .userId(TEST_USER_ID)
@@ -77,13 +93,13 @@ class OwnerServiceTest {
         when(ownerRepo.save(any(OwnerProfile.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        OwnerCreateRequest updateRequest = new OwnerCreateRequest(
+        OwnerUpdateRequest updateRequest = new OwnerUpdateRequest(
                 "+56999999999",
                 "New address",
                 LocalDate.of(1990, 5, 15)
         );
 
-        OwnerResponse response = ownerService.createOrUpdateProfile(TEST_USER_ID, updateRequest);
+        OwnerResponse response = ownerService.updateProfile(TEST_USER_ID, updateRequest);
 
         assertThat(response.phone()).isEqualTo("+56999999999");
         assertThat(response.address()).isEqualTo("New address");
@@ -91,9 +107,19 @@ class OwnerServiceTest {
     }
 
     @Test
+    @DisplayName("Should throw NotFoundException when trying to update a non-existent profile")
+    void updateProfile_WithNoProfileRecord_ShouldThrowNotFoundException() {
+        when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.empty());
+        OwnerUpdateRequest updateRequest = new OwnerUpdateRequest("+56999999999", "New address", null);
+
+        assertThatThrownBy(() -> ownerService.updateProfile(TEST_USER_ID, updateRequest))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("Owner profile not found");
+    }
+
+    @Test
     @DisplayName("Should return owner profile data when profile exists for the user id")
     void getMyProfile_WithExistingProfile_ShouldReturnProfileResponse() {
-        // Given
         OwnerProfile profile = OwnerProfile.builder()
                 .id(10L)
                 .userId(TEST_USER_ID)
@@ -112,12 +138,23 @@ class OwnerServiceTest {
     }
 
     @Test
-    @DisplayName("Should throw EntityNotFoundException when getting profile for a user id with no profile record")
-    void getMyProfile_WithNoProfileRecord_ShouldThrowEntityNotFoundException() {
+    @DisplayName("Should throw NotFoundException when getting profile for a user id with no profile record")
+    void getMyProfile_WithNoProfileRecord_ShouldThrowNotFoundException() {
         when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> ownerService.getMyProfile(TEST_USER_ID))
-                .isInstanceOf(EntityNotFoundException.class)
+                .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("Owner profile not found");
+    }
+
+    @Test
+    @DisplayName("Should throw ValidationException when repository save fails during creation")
+    void createProfile_WhenSaveFails_ShouldThrowValidationException() {
+        when(ownerRepo.findByUserId(TEST_USER_ID)).thenReturn(Optional.empty());
+        when(ownerRepo.save(any(OwnerProfile.class))).thenThrow(new RuntimeException("Database error"));
+
+        assertThatThrownBy(() -> ownerService.createProfile(TEST_USER_ID, testRequest))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Error creating profile: Invalid data provided");
     }
 }

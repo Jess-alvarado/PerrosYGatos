@@ -3,6 +3,9 @@ package com.professional.pyg_professional.services;
 import com.professional.pyg_professional.dto.requests.ProfessionalRequest;
 import com.professional.pyg_professional.dto.requests.ProfessionalUpdateRequest;
 import com.professional.pyg_professional.dto.responses.ProfessionalResponse;
+import com.professional.pyg_professional.exceptions.AlreadyExistsException;
+import com.professional.pyg_professional.exceptions.NotFoundException;
+import com.professional.pyg_professional.exceptions.ValidationException;
 import com.professional.pyg_professional.models.ProfessionalProfile;
 import com.professional.pyg_professional.repositories.ProfessionalRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,8 +16,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -94,17 +95,13 @@ class ProfessionalServiceTest {
     }
 
     @Test
-    @DisplayName("Throws 409 CONFLICT when professional profile already exists")
-    void createProfile_withExistingProfile_shouldThrow409Conflict() {
+    @DisplayName("Throws AlreadyExistsException when professional profile already exists")
+    void createProfile_withExistingProfile_shouldThrowAlreadyExistsException() {
         Mockito.when(professionalRepository.existsByUserId(TEST_USER_ID)).thenReturn(true);
 
         assertThatThrownBy(() -> professionalService.createProfile(TEST_USER_ID, testRequest))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> {
-                    ResponseStatusException rse = (ResponseStatusException) ex;
-                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-                    assertThat(rse.getReason()).contains("already exists");
-                });
+                .isInstanceOf(AlreadyExistsException.class)
+                .hasMessageContaining("Professional profile already exists");
 
         Mockito.verify(professionalRepository, Mockito.never()).save(any());
     }
@@ -121,16 +118,13 @@ class ProfessionalServiceTest {
     }
 
     @Test
-    @DisplayName("Throws 404 NOT FOUND when getting a profile that does not exist")
-    void getMyProfile_withNoProfile_shouldThrow404NotFound() {
+    @DisplayName("Throws NotFoundException when getting a profile that does not exist")
+    void getMyProfile_withNoProfile_shouldThrowNotFoundException() {
         Mockito.when(professionalRepository.findByUserId(TEST_USER_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> professionalService.getMyProfile(TEST_USER_ID))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex -> {
-                    ResponseStatusException rse = (ResponseStatusException) ex;
-                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-                });
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("Professional profile not found");
     }
 
     @Test
@@ -155,8 +149,8 @@ class ProfessionalServiceTest {
     }
 
     @Test
-    @DisplayName("Throws 404 when trying to update a non-existent profile")
-    void updateMyProfile_withNoProfile_shouldThrow404NotFound() {
+    @DisplayName("Throws NotFoundException when trying to update a non-existent profile")
+    void updateMyProfile_withNoProfile_shouldThrowNotFoundException() {
         ProfessionalUpdateRequest update = new ProfessionalUpdateRequest(
                 "+56999999999", null, null, null,
                 null, null, null, null,
@@ -166,10 +160,8 @@ class ProfessionalServiceTest {
         Mockito.when(professionalRepository.findByUserId(TEST_USER_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> professionalService.updateMyProfile(TEST_USER_ID, update))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex ->
-                        assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND)
-                );
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("Professional profile not found");
 
         Mockito.verify(professionalRepository, Mockito.never()).save(any());
     }
@@ -207,14 +199,40 @@ class ProfessionalServiceTest {
     }
 
     @Test
-    @DisplayName("Throws 404 NOT FOUND when searching professional by a non-existent database ID")
-    void getProfessionalById_withInvalidId_shouldThrow404NotFound() {
+    @DisplayName("Throws NotFoundException when searching professional by a non-existent database ID")
+    void getProfessionalById_withInvalidId_shouldThrowNotFoundException() {
         Mockito.when(professionalRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> professionalService.getProfessionalById(999L))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(ex ->
-                        assertThat(((ResponseStatusException) ex).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND)
-                );
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("Professional profile not found");
+    }
+
+    @Test
+    @DisplayName("Throws ValidationException when repository save fails during creation")
+    void createProfile_whenSaveFails_shouldThrowValidationException() {
+        Mockito.when(professionalRepository.existsByUserId(TEST_USER_ID)).thenReturn(false);
+        Mockito.when(professionalRepository.save(any(ProfessionalProfile.class)))
+                .thenThrow(new RuntimeException("Data integrity violation"));
+
+        assertThatThrownBy(() -> professionalService.createProfile(TEST_USER_ID, testRequest))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Error creating professional profile: Invalid data provided");
+    }
+
+    @Test
+    @DisplayName("Throws ValidationException when repository save fails during update")
+    void updateMyProfile_whenSaveFails_shouldThrowValidationException() {
+        ProfessionalUpdateRequest update = new ProfessionalUpdateRequest(
+                "+56999999999", null, null, null, null, null, null, null, null, null, null
+        );
+
+        Mockito.when(professionalRepository.findByUserId(TEST_USER_ID)).thenReturn(Optional.of(testProfile));
+        Mockito.when(professionalRepository.save(any(ProfessionalProfile.class)))
+                .thenThrow(new RuntimeException("Database constraint failure"));
+
+        assertThatThrownBy(() -> professionalService.updateMyProfile(TEST_USER_ID, update))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Error updating professional profile: Invalid data provided");
     }
 }
