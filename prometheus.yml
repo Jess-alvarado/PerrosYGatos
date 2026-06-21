@@ -1,0 +1,23 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'pyg-auth'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['pyg-auth:8081']
+
+  - job_name: 'pyg-owner'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['pyg-owner:8082']
+
+  - job_name: 'pyg-professional'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['pyg-professional:8083']
+
+  - job_name: 'pyg-gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['pyg-gateway:9090']

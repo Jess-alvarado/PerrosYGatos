@@ -73,3 +73,15 @@ spring:
           predicates:
             - Path=/**
           order: 999
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: pyg-gateway

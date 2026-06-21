@@ -38,7 +38,7 @@ services:
       - HIBERNATE_BINDER_LOG_LEVEL=${HIBERNATE_BINDER_LOG_LEVEL}
       - AUTH_SERVICE_URL=http://pyg-auth:8081
     ports:
-      - "8081:8081"    
+      - "8081:8081"
     depends_on:
       postgres:
         condition: service_started
@@ -126,21 +126,26 @@ services:
     ports:
       - "9090:9090"
     depends_on:
-      - pyg-auth
-      - pyg-owner
-      - pyg-professional
-      - redis
+      pyg-auth:
+        condition: service_started
+      pyg-owner:
+        condition: service_started
+      pyg-professional:
+        condition: service_started
+      redis:
+        condition: service_healthy
 
   pyg-frontend:
     build:
       context: ./frontend
       args:
-      - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL}
     container_name: pyg-frontend
     ports:
-    - "80:80"
+      - "80:80"
     depends_on:
-    - pyg-gateway
+      pyg-gateway:
+        condition: service_started
 
   redis:
     image: redis:7-alpine
@@ -152,6 +157,34 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: pyg-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9091:9090"
+    depends_on:
+      pyg-auth:
+        condition: service_started
+      pyg-owner:
+        condition: service_started
+      pyg-professional:
+        condition: service_started
+      pyg-gateway:
+        condition: service_started
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: pyg-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      prometheus:
+        condition: service_started
 
 volumes:
   pgdata:

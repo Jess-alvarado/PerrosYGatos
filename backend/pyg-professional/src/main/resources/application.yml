@@ -67,3 +67,15 @@ springdoc:
     tryItOutEnabled: true
   show-actuator: true
   packages-to-scan: com.professional.pyg_professional.controllers
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
