@@ -6,6 +6,7 @@ import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +20,7 @@ import java.util.List;
 // reemplazar respuestas directas 401 por AuthenticationEntryPoint
 // para mantener el mismo ErrorResponse del GlobalExceptionHandler
 @Component
+@Order(2)// despues del TraceIdFilter
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter implements Filter {
 
@@ -28,7 +30,8 @@ public class JwtAuthenticationFilter implements Filter {
             "/api/auth/login",
             "/api/auth/register",
             "/v3/api-docs",
-            "/swagger-ui"
+            "/swagger-ui",
+            "/actuator"
     };
 
     @Override
