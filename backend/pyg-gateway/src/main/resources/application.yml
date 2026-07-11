@@ -74,6 +74,13 @@ spring:
             - Path=/**
           order: 999
 
+        - id: behavior-case-service
+          uri: ${BEHAVIOR_CASE_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/api/cases/**
+          filters:
+            - PreserveHostHeader
+
 management:
   endpoints:
     web:

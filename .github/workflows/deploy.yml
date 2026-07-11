@@ -17,12 +17,14 @@ jobs:
           chmod +x backend/pyg-auth/mvnw
           chmod +x backend/pyg-owner/mvnw
           chmod +x backend/pyg-professional/mvnw
+          chmod +x backend/pyg-behavior-case/mvnw
 
       - name: Run unit tests
         run: |
           cd $GITHUB_WORKSPACE/backend/pyg-auth && ./mvnw test
           cd $GITHUB_WORKSPACE/backend/pyg-owner && ./mvnw test
           cd $GITHUB_WORKSPACE/backend/pyg-professional && ./mvnw test
+          cd $GITHUB_WORKSPACE/backend/pyg-behavior-case && ./mvnw test
 
       - name: Copy environment file
         run: cp ~/projects/PerrosYGatos/.env $GITHUB_WORKSPACE/.env
