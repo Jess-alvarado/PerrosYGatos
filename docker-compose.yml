@@ -122,6 +122,7 @@ services:
       - AUTH_SERVICE_URL=http://pyg-auth:${SERVER_PORT_AUTH}
       - OWNER_SERVICE_URL=http://pyg-owner:${SERVER_PORT_OWNER}
       - PROFESSIONAL_SERVICE_URL=http://pyg-professional:${SERVER_PORT_PROFESSIONAL}
+      - BEHAVIOR_CASE_SERVICE_URL=http://pyg-behavior-case:${SERVER_PORT_BEHAVIOR_CASE}
       - FRONTEND_URL=${FRONTEND_URL}
     ports:
       - "9090:9090"
@@ -131,6 +132,8 @@ services:
       pyg-owner:
         condition: service_started
       pyg-professional:
+        condition: service_started
+      pyg-behavior-case:
         condition: service_started
       redis:
         condition: service_healthy
@@ -173,6 +176,8 @@ services:
       pyg-professional:
         condition: service_started
       pyg-gateway:
+        condition: service_started
+      pyg-behavior-case:
         condition: service_started
 
   grafana:
