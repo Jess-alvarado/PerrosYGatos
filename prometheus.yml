@@ -21,3 +21,8 @@ scrape_configs:
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ['pyg-gateway:9090']
+
+  - job_name: 'pyg-behavior-case'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: [ 'pyg-behavior-case:8084' ]

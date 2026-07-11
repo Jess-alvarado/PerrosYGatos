@@ -186,5 +186,33 @@ services:
       prometheus:
         condition: service_started
 
+  pyg-behavior-case:
+    build:
+      context: ./backend/pyg-behavior-case
+    container_name: pyg-behavior-case
+    environment:
+      - SPRING_APPLICATION_NAME_BEHAVIOR_CASE=pyg-behavior-case
+      - BEHAVIOR_CASE_DATABASE_URL=jdbc:postgresql://postgres:5432/pyg_behavior_case
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=${DB_DRIVER}
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=${SPRING_JPA_HIBERNATE_DDL_AUTO}
+      - SPRING_JPA_SHOW_SQL=${SPRING_JPA_SHOW_SQL}
+      - SPRING_JPA_PROPERTIES_FORMAT_SQL=${SPRING_JPA_PROPERTIES_FORMAT_SQL}
+      - SPRING_JPA_OPEN_IN_VIEW=${SPRING_JPA_OPEN_IN_VIEW}
+      - SERVER_PORT_BEHAVIOR_CASE=8084
+      - JWT_SECRET=${JWT_SECRET}
+      - LOG_LEVEL=${LOG_LEVEL}
+      - APP_LOG_LEVEL=${APP_LOG_LEVEL}
+      - SPRING_LOG_LEVEL=${SPRING_LOG_LEVEL}
+      - HIBERNATE_SQL_LOG_LEVEL=${HIBERNATE_SQL_LOG_LEVEL}
+      - HIBERNATE_BINDER_LOG_LEVEL=${HIBERNATE_BINDER_LOG_LEVEL}
+    ports:
+      - "8084:8084"
+    depends_on:
+      postgres:
+        condition: service_started
+      pyg-auth:
+        condition: service_started
 volumes:
   pgdata:
