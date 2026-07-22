@@ -1,0 +1,153 @@
+@use '@angular/material' as mat;
+
+// ─── FUENTE ───────────────────────────────────────────────
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+// ─── TEMA ANGULAR MATERIAL ────────────────────────────────
+@include mat.core();
+
+$pyg-primary: mat.define-theme((
+  color: (
+    theme-type: light,
+    primary: mat.$orange-palette,
+  ),
+  typography: (
+    brand-family: 'Inter, sans-serif',
+    plain-family: 'Inter, sans-serif',
+  ),
+  density: (scale: 0)
+));
+
+:root {
+  @include mat.all-component-themes($pyg-primary);
+}
+
+// ─── TOKENS DE DISEÑO — MODO CLARO ───────────────────────
+:root {
+  // Fondos
+  --pyg-bg:           #F7F8FA;
+  --pyg-surface:      #FFFFFF;
+  --pyg-elevated:     #FFFFFF;
+
+  // Texto
+  --pyg-text:         #1E1E1E;
+  --pyg-text-muted:   #6B7280;
+  --pyg-text-disabled:#9CA3AF;
+
+  // Bordes
+  --pyg-border:       #D8DEE4;
+  --pyg-divider:      #ECEFF2;
+
+  // Marca
+  --pyg-cta:          #D97757;
+  --pyg-cta-hover:    #4F6F52;
+  --pyg-green:        #4F6F52;
+
+  // Semánticos
+  --pyg-error:        #C65A5A;
+  --pyg-warning:      #D7A229;
+  --pyg-info:         #3A82F7;
+  --pyg-success:      #3C8D5A;
+
+  // Radios
+  --pyg-radius-btn:   12px;
+  --pyg-radius-input: 10px;
+  --pyg-radius-card:  16px;
+  --pyg-radius-modal: 20px;
+  --pyg-radius-badge: 999px;
+
+  // Tags de estado
+  --pyg-tag-open:      #4F6F52;
+  --pyg-tag-review:    #D97757;
+  --pyg-tag-closed:    #6B7280;
+  --pyg-tag-cancelled: #C65A5A;
+}
+
+// ─── MODO OSCURO ──────────────────────────────────────────
+@media (prefers-color-scheme: dark) {
+  :root {
+    --pyg-bg:           #181A1B;
+    --pyg-surface:      #242628;
+    --pyg-elevated:     #2C2F33;
+
+    --pyg-text:         #F3F4F6;
+    --pyg-text-muted:   #A1A1AA;
+    --pyg-text-disabled:#71717A;
+
+    --pyg-border:       #3B4045;
+    --pyg-divider:      #31353A;
+
+    --pyg-cta:          #D97757;
+    --pyg-cta-hover:    #5C8260;
+    --pyg-green:        #8FAAA3;
+
+    --pyg-error:        #D97A7A;
+    --pyg-warning:      #E3B95C;
+    --pyg-info:         #6AA5FF;
+    --pyg-success:      #63B37A;
+
+    --pyg-tag-open:      #8FAAA3;
+    --pyg-tag-review:    #D97757;
+    --pyg-tag-closed:    #71717A;
+    --pyg-tag-cancelled: #D97A7A;
+  }
+}
+
+// ─── RESET Y BASE ─────────────────────────────────────────
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  background-color: var(--pyg-bg);
+  color: var(--pyg-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+// ─── SOBREESCRITURA DE ANGULAR MATERIAL ───────────────────
+
+// Botón primario → terracota
+.mat-mdc-raised-button.mat-primary,
+.mat-mdc-flat-button.mat-primary {
+  --mdc-filled-button-container-color: var(--pyg-cta);
+  --mdc-filled-button-label-text-color: #fff;
+  border-radius: var(--pyg-radius-btn);
+
+  &:hover {
+    --mdc-filled-button-container-color: var(--pyg-cta-hover);
+  }
+}
+
+// Botón secundario
+.mat-mdc-outlined-button {
+  border-radius: var(--pyg-radius-btn);
+  border-color: var(--pyg-border);
+  color: var(--pyg-text);
+}
+
+// Inputs
+.mat-mdc-form-field {
+  .mdc-text-field {
+    border-radius: var(--pyg-radius-input);
+    background-color: var(--pyg-surface);
+  }
+}
+
+// Cards
+.mat-mdc-card {
+  border-radius: var(--pyg-radius-card) !important;
+  background-color: var(--pyg-surface) !important;
+  border: 1px solid var(--pyg-border);
+  box-shadow: none !important;
+}
+
+// Stepper (wizard)
+.mat-stepper-horizontal,
+.mat-stepper-vertical {
+  background-color: transparent;
+}

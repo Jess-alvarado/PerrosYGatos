@@ -1,0 +1,74 @@
+<div class="login-page">
+  <div class="login-card">
+
+    <!-- Logo / marca -->
+    <div class="brand">
+      <span class="brand-name">PerrosYGatos</span>
+      <p class="brand-tagline">Conectamos a tus mascotas con quienes pueden ayudarlas</p>
+    </div>
+
+    <!-- Error -->
+    @if (error) {
+      <div class="error-banner" role="alert">
+        <mat-icon>error_outline</mat-icon>
+        <span>{{ error }}</span>
+      </div>
+    }
+
+    <!-- Formulario -->
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Correo o usuario</mat-label>
+        <input
+          matInput
+          formControlName="username"
+          autocomplete="username"
+          [attr.aria-describedby]="form.get('username')?.invalid ? 'username-error' : null"/>
+        @if (form.get('username')?.hasError('required') && form.get('username')?.touched) {
+          <mat-error id="username-error">El usuario es obligatorio</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Contraseña</mat-label>
+        <input
+          matInput
+          formControlName="password"
+          [type]="hidePassword ? 'password' : 'text'"
+          autocomplete="current-password"/>
+        <button
+          mat-icon-button
+          matSuffix
+          type="button"
+          [attr.aria-label]="hidePassword ? 'Mostrar contraseña' : 'Ocultar contraseña'"
+          (click)="hidePassword = !hidePassword">
+          <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+        @if (form.get('password')?.hasError('required') && form.get('password')?.touched) {
+          <mat-error>La contraseña es obligatoria</mat-error>
+        }
+      </mat-form-field>
+
+      <button
+        mat-flat-button
+        type="submit"
+        class="submit-btn"
+        [disabled]="loading || form.invalid"
+        aria-label="Iniciar sesión">
+        @if (loading) {
+          <mat-spinner diameter="20"/>
+        } @else {
+          Iniciar sesión
+        }
+      </button>
+
+    </form>
+
+    <p class="register-link">
+      ¿No tienes cuenta?
+      <a routerLink="/auth/register">Regístrate aquí</a>
+    </p>
+
+  </div>
+</div>
